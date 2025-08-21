@@ -11,7 +11,7 @@ load_dotenv()
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 """ Or hard code SQLite here """
-# DATABASE_URL = "sqlite:///./todosapp.db"
+# DATABASE_URL = "sqlite:///./test.db"
 
 """ Or hard code PostgreSQL here """
 # DATABASE_URL=""
