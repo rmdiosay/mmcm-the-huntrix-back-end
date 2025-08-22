@@ -12,6 +12,9 @@ env/
 # Test database
 test.db
 
+# Uploads
+uploads
+
 # Pytest cache
 .pytest_cache/
 

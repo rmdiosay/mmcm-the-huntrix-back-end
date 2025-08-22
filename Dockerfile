@@ -6,6 +6,7 @@ WORKDIR /app
 # Install dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
+RUN mkdir -p /app/uploads/images /app/uploads/documents
 
 # Copy the project files
 COPY src/ src/
