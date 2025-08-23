@@ -1,18 +1,18 @@
 from uuid import UUID
-from sqlalchemy.orm import Session
 from fastapi import HTTPException
-from . import models
-from src.entities.user import User
+from sqlalchemy.orm import Session
+from src.entities.schemas import UserResponse, PasswordChange
+from src.entities.models import User
 from src.exceptions import (
     UserNotFoundError,
     InvalidPasswordError,
     PasswordMismatchError,
 )
-from src.auth.service import verify_password, get_password_hash
+from src.services.auth_service import verify_password, get_password_hash
 import logging
 
 
-def get_user_by_id(db: Session, user_id: UUID) -> models.UserResponse:
+def get_user_by_id(db: Session, user_id: UUID) -> UserResponse:
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         logging.warning(f"User not found with ID: {user_id}")
@@ -22,7 +22,7 @@ def get_user_by_id(db: Session, user_id: UUID) -> models.UserResponse:
 
 
 def change_password(
-    db: Session, user_id: UUID, password_change: models.PasswordChange
+    db: Session, user_id: UUID, password_change: PasswordChange
 ) -> None:
     try:
         user = get_user_by_id(db, user_id)
@@ -48,3 +48,24 @@ def change_password(
             f"Error during password change for user ID: {user_id}. Error: {str(e)}"
         )
         raise
+
+
+def verify_user(db: Session, user: User) -> User:
+    if user.is_verified:
+        raise HTTPException(status_code=400, detail="User is already verified")
+
+    user.is_verified = True
+
+    # Update the referrer if this user was referred
+    if user.referred_by_id:
+        referrer = db.query(User).filter(User.id == user.referred_by_id).first()
+        if referrer:
+            referrer.referrals_count += 1
+            referrer.points += 100  # Example bonus
+            db.add(referrer)
+
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+
+    return user

@@ -2,11 +2,9 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from .api import register_routes
-from .logging import configure_logging, LogLevels
 import os
-from .database.core import Base, engine
+from .database import Base, engine
 
-configure_logging(LogLevels.info)
 
 # Create folders inside the container at startup
 os.makedirs("uploads/images", exist_ok=True)

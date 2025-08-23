@@ -1,0 +1,169 @@
+from sqlalchemy.orm import Session
+from uuid import UUID
+from fastapi import UploadFile
+from typing import List, Optional
+from src.entities.models import BuyProperty
+from src.entities.schemas import (
+    BuyPropertyCreateSchema,
+    BuyPropertyUpdateSchema,
+)
+from src.entities.utils import generate_slug, delete_file_safe, save_upload_file
+
+UPLOAD_DIR_IMAGES = "uploads/images"
+UPLOAD_DIR_DOCS = "uploads/documents"
+
+
+# ---------------- CREATE ----------------
+async def create_buy_property_service(
+    db: Session,
+    user_id: UUID,
+    name: str,
+    price: str,
+    address: str,
+    bed: int,
+    bath: int,
+    size: str,
+    is_popular: bool,
+    description: str,
+    amenities: List[str],
+    images: List[UploadFile],
+    documents: List[UploadFile],
+    slug: Optional[str] = None,
+):
+    if not slug:
+        slug = generate_slug(name)
+
+    image_paths = []
+    for image in images:
+        path = await save_upload_file(image, UPLOAD_DIR_IMAGES)
+        image_paths.append(path)
+
+    document_paths = []
+    for doc in documents:
+        path = await save_upload_file(doc, UPLOAD_DIR_DOCS)
+        document_paths.append(path)
+
+    buy = BuyPropertyCreateSchema(
+        slug=slug,
+        name=name,
+        price=price,
+        address=address,
+        bed=bed,
+        bath=bath,
+        size=size,
+        is_popular=is_popular,
+        description=description,
+        amenities=amenities,
+        images=image_paths,
+        documents=document_paths,
+    )
+
+    db_property = BuyProperty(**buy.model_dump(), user_id=user_id)
+    db.add(db_property)
+    db.commit()
+    db.refresh(db_property)
+    return db_property
+
+
+# ---------------- READ ----------------
+def get_buy_properties_service(db: Session, user_id: UUID):
+    return db.query(BuyProperty).filter(BuyProperty.user_id == user_id).all()
+
+
+# ---------------- UPDATE ----------------
+async def update_buy_property_service(
+    db: Session,
+    slug: str,
+    name: str,
+    price: str,
+    address: str,
+    bed: int,
+    bath: int,
+    size: str,
+    is_popular: bool,
+    description: str,
+    amenities: List[str],
+    images: List[UploadFile],
+    documents: List[UploadFile],
+    remove_images: List[str],
+    remove_documents: List[str],
+    new_slug: Optional[str] = None,
+):
+    db_property = db.query(BuyProperty).filter(BuyProperty.slug == slug).first()
+    if not db_property:
+        return None
+
+    # Save new images
+    new_image_paths = []
+    for image in images:
+        path = await save_upload_file(image, UPLOAD_DIR_IMAGES)
+        new_image_paths.append(path)
+
+    # Save new documents
+    new_doc_paths = []
+    for doc in documents:
+        path = await save_upload_file(doc, UPLOAD_DIR_DOCS)
+        new_doc_paths.append(path)
+
+    # Delete removed images
+    for img_path in remove_images:
+        delete_file_safe(img_path)
+
+    # Delete removed documents
+    for doc_path in remove_documents:
+        delete_file_safe(doc_path)
+
+    # Keep others + add new ones
+    updated_images = [img for img in db_property.images if img not in remove_images]
+    updated_images.extend(new_image_paths)
+
+    updated_documents = [
+        doc for doc in db_property.documents if doc not in remove_documents
+    ]
+    updated_documents.extend(new_doc_paths)
+
+    if not new_slug:
+        new_slug = db_property.slug
+
+    update_data = BuyPropertyUpdateSchema(
+        slug=new_slug,
+        name=name,
+        price=price,
+        address=address,
+        bed=bed,
+        bath=bath,
+        size=size,
+        is_popular=is_popular,
+        description=description,
+        amenities=amenities,
+        images=updated_images,
+        documents=updated_documents,
+        remove_images=remove_images,
+        remove_documents=remove_documents,
+    )
+
+    for key, value in update_data.model_dump(exclude={"remove_images", "remove_documents"}).items():
+        setattr(db_property, key, value)
+
+    db.commit()
+    db.refresh(db_property)
+    return db_property
+
+
+# ---------------- DELETE ----------------
+def delete_buy_property_service(db: Session, slug: str):
+    db_property = db.query(BuyProperty).filter(BuyProperty.slug == slug).first()
+    if not db_property:
+        return False
+
+    # Delete all images
+    for img_path in db_property.images or []:
+        delete_file_safe(img_path)
+
+    # Delete all documents
+    for doc_path in db_property.documents or []:
+        delete_file_safe(doc_path)
+
+    db.delete(db_property)
+    db.commit()
+    return True

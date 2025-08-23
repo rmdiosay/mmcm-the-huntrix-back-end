@@ -2,6 +2,12 @@ from slugify import slugify
 import uuid
 import os
 from uuid import uuid4
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+
+
+limiter = Limiter(key_func=get_remote_address)
+
 
 def generate_slug(name: str) -> str:
     return slugify(name) + "-" + str(uuid.uuid4())[:8]
