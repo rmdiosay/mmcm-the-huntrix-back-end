@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
+from fastapi import HTTPException, status
 from uuid import UUID
 import uuid
 from datetime import datetime
@@ -33,6 +34,13 @@ async def create_rent_property(
 ):
     if not slug:
         slug = generate_slug(name)
+
+    existing = db.query(RentProperty).filter(RentProperty.slug == slug).first()
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"A property with slug '{slug}' already exists.",
+        )
 
     image_paths = [await save_upload_file(img, UPLOAD_DIR_IMAGES) for img in images]
 
@@ -109,6 +117,17 @@ async def update_rent_property(
 
     if not new_slug:
         new_slug = db_property.slug
+
+    existing = (
+        db.query(RentProperty)
+        .filter(RentProperty.slug == new_slug, RentProperty.id != db_property.id)
+        .first()
+    )
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"A property with slug '{new_slug}' already exists.",
+        )
 
     update_data = RentPropertyUpdateSchema(
         slug=new_slug,

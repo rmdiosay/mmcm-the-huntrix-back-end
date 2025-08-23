@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
+from fastapi import HTTPException, status
 from uuid import UUID
 import uuid
 from datetime import datetime
@@ -31,10 +32,19 @@ async def create_buy_property(
     amenities: List[str],
     images: List[UploadFile],
     documents: List[UploadFile],
+    latitude: Optional[float] = None,
+    longitude: Optional[float] = None,
     slug: Optional[str] = None,
 ):
     if not slug:
         slug = generate_slug(name)
+
+    existing = db.query(BuyProperty).filter(BuyProperty.slug == slug).first()
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"A property with slug '{slug}' already exists.",
+        )
 
     image_paths = []
     for image in images:
@@ -61,7 +71,7 @@ async def create_buy_property(
         documents=document_paths,
     )
 
-    db_property = BuyProperty(**buy.model_dump(), user_id=user_id)
+    db_property = BuyProperty(**buy.model_dump(), lister_id=user_id)
     db.add(db_property)
     db.commit()
     db.refresh(db_property)
@@ -137,6 +147,17 @@ async def update_buy_property(
 
     if not new_slug:
         new_slug = db_property.slug
+
+    existing = (
+        db.query(BuyProperty)
+        .filter(BuyProperty.slug == new_slug, BuyProperty.id != db_property.id)
+        .first()
+    )
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"A property with slug '{new_slug}' already exists.",
+        )
 
     update_data = BuyPropertyUpdateSchema(
         slug=new_slug,
