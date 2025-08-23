@@ -3,7 +3,12 @@ from typing import List, Optional
 from sqlalchemy.orm import Session
 from src.database import get_db
 from src.services.auth_service import get_current_user
-from src.entities.schemas import TokenData, RentPropertySchema
+from src.entities.schemas import (
+    TokenData,
+    RentPropertySchema,
+    PendingRentalRequest,
+    ConfirmRentalRequest,
+)
 from ..services.rent_service import (
     create_rent_property,
     get_rent_properties,
@@ -11,6 +16,7 @@ from ..services.rent_service import (
     get_user_rent_rentals,
     update_rent_property,
     delete_rent_property,
+    RentalService,
 )
 
 router = APIRouter(prefix="/rent", tags=["Rent"])
@@ -19,7 +25,7 @@ router = APIRouter(prefix="/rent", tags=["Rent"])
 @router.post("", response_model=RentPropertySchema)
 async def create_rent(
     name: str = Form(...),
-    price: str = Form(...),
+    price: float = Form(...),
     address: str = Form(...),
     bed: int = Form(...),
     bath: int = Form(...),
@@ -28,7 +34,7 @@ async def create_rent(
     description: str = Form(""),
     amenities: List[str] = Form([]),
     images: List[UploadFile] = File([]),
-    lease_term: Optional[str] = Form(None),
+    lease_term: Optional[int] = Form(None),
     latitude: Optional[float] = Form(None),
     longitude: Optional[float] = Form(None),
     slug: Optional[str] = Form(None),
@@ -78,7 +84,7 @@ def list_user_rentals(
 async def update_rent(
     slug: str,
     name: str = Form(...),
-    price: str = Form(...),
+    price: float = Form(...),
     address: str = Form(...),
     bed: int = Form(...),
     bath: int = Form(...),
@@ -88,7 +94,7 @@ async def update_rent(
     amenities: List[str] = Form([]),
     images: List[UploadFile] = File([]),
     remove_images: List[str] = Form([]),
-    lease_term: Optional[str] = Form(None),
+    lease_term: Optional[int] = Form(None),
     latitude: Optional[float] = Form(None),
     longitude: Optional[float] = Form(None),
     new_slug: Optional[str] = Form(None),
@@ -124,3 +130,34 @@ def delete_rent(slug: str, db: Session = Depends(get_db)):
     if not success:
         raise HTTPException(status_code=404, detail="Rent property not found")
     return
+
+
+@router.post("/pending", response_model=dict)
+def create_pending_rental(request: PendingRentalRequest, db: Session = Depends(get_db)):
+    service = RentalService(db)
+    try:
+        pending = service.create_pending_rental(
+            rent_id=str(request.rent_id),
+            lister_id=str(request.lister_id),
+            tenant_id=str(request.tenant_id),
+        )
+        return {"success": True, "pending_id": str(pending.id)}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post("/confirm", response_model=dict)
+def confirm_rental(request: ConfirmRentalRequest, db: Session = Depends(get_db)):
+    service = RentalService(db)
+    try:
+        rent_property = service.confirm_rental(
+            lister_tenant_id=str(request.lister_tenant_id)
+        )
+        return {
+            "success": True,
+            "rent_property_id": str(rent_property.id),
+            "tenant_id": str(rent_property.tenant_id),
+            "is_available": rent_property.is_available,
+        }
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))

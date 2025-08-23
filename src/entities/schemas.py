@@ -34,6 +34,12 @@ class UserResponse(BaseModel):
     points: int = 0
     referrals_count: int = 0
     transactions: int = 0
+    property_sale: Optional[int] = 0
+    property_rental: Optional[int] = 0
+    direct_referrals: Optional[int] = 0
+    secondary_referrals: Optional[int] = 0
+    tertiary_referrals: Optional[int] = 0
+    positive_reviews: Optional[int] = 0
     referral_code: int
     is_verified: bool = False
     referred_by_id: Optional[UUID] = None
@@ -50,7 +56,7 @@ class PasswordChange(BaseModel):
 
 class RentPropertyBase(BaseModel):
     name: str
-    price: str
+    price: float
     address: str
     bed: int
     bath: int
@@ -65,12 +71,12 @@ class RentPropertyBase(BaseModel):
 
 
 class RentPropertyCreateSchema(RentPropertyBase):
-    lease_term: Optional[str] = None
+    lease_term: Optional[int] = None
     slug: Optional[str] = None
 
 
 class RentPropertyUpdateSchema(RentPropertyBase):
-    lease_term: Optional[str] = None
+    lease_term: Optional[int] = None
     slug: Optional[str] = None
     remove_images: List[str] = []
 
@@ -80,7 +86,17 @@ class RentPropertySchema(RentPropertyBase):
     slug: str
     lister_id: UUID4
     tenant_id: Optional[UUID4] = None
-    lease_term: Optional[str] = None
+    lease_term: Optional[int] = None
+
+
+class PendingRentalRequest(BaseModel):
+    rent_id: UUID
+    lister_id: UUID
+    tenant_id: UUID
+
+
+class ConfirmRentalRequest(BaseModel):
+    lister_tenant_id: UUID
 
 
 class BuyPropertyCreateSchema(RentPropertyBase):
@@ -100,5 +116,15 @@ class BuyPropertySchema(RentPropertyBase):
     slug: str
     lister_id: UUID4
     buyer_id: Optional[UUID4] = None
-    lease_term: Optional[str] = None
+    lease_term: Optional[int] = None
     documents: List[str]
+
+
+class PendingSaleRequest(BaseModel):
+    buy_id: UUID
+    lister_id: UUID
+    buyer_id: UUID
+
+
+class ConfirmSaleRequest(BaseModel):
+    lister_buyer_id: UUID

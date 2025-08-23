@@ -1,8 +1,11 @@
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import SQLAlchemyError
 from uuid import UUID
+import uuid
+from datetime import datetime
 from fastapi import UploadFile
 from typing import List, Optional
-from src.entities.models import BuyProperty
+from src.entities.models import BuyProperty, ListerBuyer, User
 from src.entities.schemas import (
     BuyPropertyCreateSchema,
     BuyPropertyUpdateSchema,
@@ -18,7 +21,7 @@ async def create_buy_property(
     db: Session,
     user_id: UUID,
     name: str,
-    price: str,
+    price: float,
     address: str,
     bed: int,
     bath: int,
@@ -83,7 +86,7 @@ async def update_buy_property(
     db: Session,
     slug: str,
     name: str,
-    price: str,
+    price: float,
     address: str,
     bed: int,
     bath: int,
@@ -181,3 +184,140 @@ def delete_buy_property(db: Session, slug: str):
     db.delete(db_property)
     db.commit()
     return True
+
+
+# ---------------- SaleService ----------------
+
+
+def _update_user_stats(user, sale_amount: float):
+    """
+    Update a user's stats after a sale.
+    - Add sale_amount to sale
+    - Increment transactions
+    - Recalculate property_sale points (1 pt per 10,000 in sale)
+    - Recalculate total points
+    """
+    user.sale += sale_amount
+    user.transactions += 1
+    user.property_sale = int(user.sale // 10000)
+    user.points = (
+        user.property_sale
+        + user.property_rental
+        + user.direct_referrals
+        + user.secondary_referrals
+        + user.tertiary_referrals
+        + user.positive_reviews
+    )
+
+
+class SaleService:
+    def __init__(self, db: Session):
+        self.db = db
+
+    def create_pending_sale(self, buy_id: str, lister_id: str, buyer_id: str):
+        """Create a ListerBuyer record when a user shows interest in buying a property."""
+        try:
+            with self.db.begin():
+                buy_property = (
+                    self.db.query(BuyProperty)
+                    .filter(BuyProperty.id == buy_id)
+                    .with_for_update()
+                    .first()
+                )
+
+                if not buy_property:
+                    raise Exception("Buy property not found")
+
+                if not buy_property.is_available:
+                    raise Exception("Property is no longer available")
+
+                # Avoid duplicate pending record
+                existing = (
+                    self.db.query(ListerBuyer)
+                    .filter_by(buy_id=buy_id, lister_id=lister_id, buyer_id=buyer_id)
+                    .first()
+                )
+
+                if existing:
+                    return existing
+
+                # Create pending sale
+                new_pending = ListerBuyer(
+                    id=uuid.uuid4(),
+                    buy_id=buy_id,
+                    lister_id=lister_id,
+                    buyer_id=buyer_id,
+                    created_at=datetime.utcnow(),
+                )
+
+                self.db.add(new_pending)
+                return new_pending
+
+        except SQLAlchemyError as e:
+            self.db.rollback()
+            raise e
+
+    def confirm_sale(self, lister_buyer_id: str):
+        """Confirm a sale, finalize the buyer, remove other pending records, and update lister and buyer stats."""
+        try:
+            with self.db.begin():
+                # Lock the pending sale record
+                pending = (
+                    self.db.query(ListerBuyer)
+                    .filter(ListerBuyer.id == lister_buyer_id)
+                    .with_for_update()
+                    .first()
+                )
+                if not pending:
+                    raise Exception("Pending sale not found")
+
+                # Lock the property
+                buy_property = (
+                    self.db.query(BuyProperty)
+                    .filter(BuyProperty.id == pending.buy_id)
+                    .with_for_update()
+                    .first()
+                )
+                if not buy_property:
+                    raise Exception("Buy property not found")
+                if not buy_property.is_available:
+                    raise Exception("Property is already sold")
+
+                # Update the BuyProperty
+                buy_property.is_available = False
+                buy_property.buyer_id = pending.buyer_id
+
+                # Delete other pending entries for the same property and lister
+                self.db.query(ListerBuyer).filter(
+                    ListerBuyer.buy_id == pending.buy_id,
+                    ListerBuyer.lister_id == pending.lister_id,
+                    ListerBuyer.id != lister_buyer_id,
+                ).delete(synchronize_session=False)
+
+                # Update lister stats
+                lister = (
+                    self.db.query(User)
+                    .filter(User.id == pending.lister_id)
+                    .with_for_update()
+                    .first()
+                )
+                if not lister:
+                    raise Exception("Lister not found")
+                _update_user_stats(lister, buy_property.price)
+
+                # Update buyer stats
+                buyer = (
+                    self.db.query(User)
+                    .filter(User.id == pending.buyer_id)
+                    .with_for_update()
+                    .first()
+                )
+                if not buyer:
+                    raise Exception("Buyer not found")
+                _update_user_stats(buyer, buy_property.price)
+
+                return buy_property
+
+        except SQLAlchemyError as e:
+            self.db.rollback()
+            raise e

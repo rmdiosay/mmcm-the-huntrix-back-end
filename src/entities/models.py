@@ -32,6 +32,14 @@ class User(Base):
     referral_code = Column(Integer, nullable=False)
     is_verified = Column(Boolean, default=False)
     referred_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    sale = Column(Integer, default=0)
+    rental = Column(Integer, default=0)
+    property_sale = Column(Integer, default=0)
+    property_rental = Column(Integer, default=0)
+    direct_referrals = Column(Integer, default=0)
+    secondary_referrals = Column(Integer, default=0)
+    tertiary_referrals = Column(Integer, default=0)
+    positive_reviews = Column(Integer, default=0)
 
     referrals = relationship("User", backref="referred_by", remote_side=[id])
     rent_properties = relationship(
@@ -60,14 +68,14 @@ class RentProperty(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     slug = Column(String, unique=True, nullable=False)
     name = Column(String, nullable=False)
-    price = Column(String, nullable=False)
+    price = Column(Float, nullable=False)
     address = Column(String, nullable=False)
     bed = Column(Integer, nullable=False)
     bath = Column(Integer, nullable=False)
     size = Column(String, nullable=False)
     is_popular = Column(Boolean, default=False)
     is_available = Column(Boolean, default=True)
-    lease_term = Column(String, nullable=True)
+    lease_term = Column(Integer, nullable=False)
     description = Column(String)
     amenities = Column(MutableList.as_mutable(ARRAY(String)))
     images = Column(MutableList.as_mutable(ARRAY(String)))
@@ -95,7 +103,7 @@ class BuyProperty(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     slug = Column(String, unique=True, nullable=False)
     name = Column(String, nullable=False)
-    price = Column(String, nullable=False)
+    price = Column(Float, nullable=False)
     address = Column(String, nullable=False)
     bed = Column(Integer, nullable=False)
     bath = Column(Integer, nullable=False)
@@ -118,6 +126,42 @@ class BuyProperty(Base):
     buyer = relationship(
         "User", back_populates="bought_properties", foreign_keys=[buyer_id]
     )
+
+
+class ListerTenant(Base):
+    __tablename__ = "lister_tenants"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    rent_id = Column(
+        UUID(as_uuid=True), ForeignKey("rent_properties.id"), nullable=False
+    )
+    lister_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    tenant_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    rent = relationship("RentProperty", backref="pending_tenants")
+    lister = relationship("User", foreign_keys=[lister_id])
+    tenant = relationship("User", foreign_keys=[tenant_id])
+
+    def __repr__(self):
+        return f"<ListerTenant(rent_id='{self.rent_id}', tenant_id='{self.tenant_id}')>"
+
+
+class ListerBuyer(Base):
+    __tablename__ = "lister_buyers"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    buy_id = Column(UUID(as_uuid=True), ForeignKey("buy_properties.id"), nullable=False)
+    lister_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    buyer_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    buy = relationship("BuyProperty", backref="pending_buyers")
+    lister = relationship("User", foreign_keys=[lister_id])
+    buyer = relationship("User", foreign_keys=[buyer_id])
+
+    def __repr__(self):
+        return f"<ListerBuyer(buy_id='{self.buy_id}', buyer_id='{self.buyer_id}')>"
 
 
 class Review(Base):

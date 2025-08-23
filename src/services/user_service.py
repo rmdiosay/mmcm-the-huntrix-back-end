@@ -53,18 +53,42 @@ def change_password(
 def verify_user(db: Session, user: User) -> User:
     if user.is_verified:
         raise HTTPException(status_code=400, detail="User is already verified")
+    
+    if user.transactions < 1:
+        raise HTTPException(status_code=400, detail="User must have at least one transaction to be verified")
 
     user.is_verified = True
-
-    # Update the referrer if this user was referred
-    if user.referred_by_id:
-        referrer = db.query(User).filter(User.id == user.referred_by_id).first()
-        if referrer:
-            referrer.referrals_count += 1
-            referrer.points += 100  # Example bonus
-            db.add(referrer)
-
     db.add(user)
+
+    # Multi-level referral updates
+    referrer_id = user.referred_by_id
+    level = 1
+
+    while referrer_id and level <= 5:
+        referrer = db.query(User).filter(User.id == referrer_id).first()
+        if not referrer:
+            break
+
+        # Apply points based on level
+        if level == 1:
+            referrer.direct_referrals += 5
+            referrer.referrals_count += 1
+            referrer.points += 5
+        elif level == 2:
+            referrer.secondary_referrals += 2
+            referrer.referrals_count += 1
+            referrer.points += 2
+        else:  # levels 3, 4, 5
+            referrer.tertiary_referrals += 1
+            referrer.referrals_count += 1
+            referrer.points += 1
+
+        db.add(referrer)
+
+        # Move up the referral chain
+        referrer_id = referrer.referred_by_id
+        level += 1
+
     db.commit()
     db.refresh(user)
 
