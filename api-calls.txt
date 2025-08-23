@@ -1,0 +1,84 @@
+=======================================================================
+AUTHORIZATION
+=======================================================================
+
+POST /register
+Registers a new user account. Requires user details such as email, password, and name.
+
+POST /auth/token
+Logs in a user and returns an access token. Required for authenticated requests.
+
+
+
+=======================================================================
+USER
+=======================================================================
+
+GET /users/me
+Retrieves information about the currently authenticated user.
+
+PUT /users/change-password
+Allows the authenticated user to change their password.
+
+POST /users/verify
+Verifies the current user account.
+
+
+
+=======================================================================
+RENT
+=======================================================================
+
+GET /rent
+Lists all available rental properties.
+
+POST /rent
+Creates a new rental property listing.
+
+GET /rent/listings
+Lists rental properties created by the authenticated user.
+
+GET /rent/rentals
+Lists rental properties the authenticated user has rented.
+
+PUT /rent/{slug}
+Updates a rental property identified by its slug.
+
+DELETE /rent/{slug}
+Deletes a rental property identified by its slug.
+
+POST /rent/pending
+Creates a pending rental record when a user shows interest in renting a property.
+
+POST /rent/confirm
+Confirms a rental after approval from the property owner.
+
+
+
+=======================================================================
+BUY
+=======================================================================
+
+GET /buy
+Lists all properties available for purchase.
+
+POST /buy
+Creates a new property listing for sale.
+
+GET /buy/listings
+Lists properties for sale created by the authenticated user.
+
+GET /buy/purchases
+Lists properties the authenticated user has purchased.
+
+PUT /buy/{slug}
+Updates a property listing identified by its slug.
+
+DELETE /buy/{slug}
+Deletes a property listing identified by its slug.
+
+POST /buy/pending
+Creates a pending sale record when a user shows interest in buying a property.
+
+POST /buy/confirm
+Confirms a property sale after approval from the seller.
