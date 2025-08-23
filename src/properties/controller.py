@@ -21,7 +21,12 @@ from .models import (
     BuyPropertyCreateSchema,
     BuyPropertyUpdateSchema,
 )
-from .utils import generate_slug, delete_file_safe
+from .utils import generate_slug, delete_file_safe, save_upload_file
+
+
+UPLOAD_DIR_IMAGES = "uploads/images"
+UPLOAD_DIR_DOCS = "uploads/documents"
+
 
 rent_router = APIRouter(prefix="/properties/rent", tags=["Rent"])
 buy_router = APIRouter(prefix="/properties/buy", tags=["Buy"])
@@ -47,9 +52,7 @@ async def create_rent(
 
     image_paths = []
     for image in images:
-        path = f"uploads/images/{image.filename}"
-        with open(path, "wb") as buffer:
-            buffer.write(await image.read())
+        path = await save_upload_file(image, UPLOAD_DIR_IMAGES)
         image_paths.append(path)
 
     rent = RentPropertyCreateSchema(
@@ -97,9 +100,7 @@ async def update_rent(
     # Save new images
     new_image_paths = []
     for image in images:
-        path = f"uploads/images/{image.filename}"
-        with open(path, "wb") as buffer:
-            buffer.write(await image.read())
+        path = await save_upload_file(image, UPLOAD_DIR_IMAGES)
         new_image_paths.append(path)
 
     # Delete removed images
@@ -160,16 +161,12 @@ async def create_buy(
 
     image_paths = []
     for image in images:
-        path = f"uploads/images/{image.filename}"
-        with open(path, "wb") as buffer:
-            buffer.write(await image.read())
+        path = await save_upload_file(image, UPLOAD_DIR_IMAGES)
         image_paths.append(path)
 
     document_paths = []
     for doc in documents:
-        path = f"uploads/documents/{doc.filename}"
-        with open(path, "wb") as buffer:
-            buffer.write(await doc.read())
+        path = await save_upload_file(doc, UPLOAD_DIR_DOCS)
         document_paths.append(path)
 
     buy = BuyPropertyCreateSchema(
@@ -220,17 +217,13 @@ async def update_buy(
     # Save new images
     new_image_paths = []
     for image in images:
-        path = f"uploads/images/{image.filename}"
-        with open(path, "wb") as buffer:
-            buffer.write(await image.read())
+        path = await save_upload_file(image, UPLOAD_DIR_IMAGES)
         new_image_paths.append(path)
 
     # Save new documents
     new_doc_paths = []
     for doc in documents:
-        path = f"uploads/documents/{doc.filename}"
-        with open(path, "wb") as buffer:
-            buffer.write(await doc.read())
+        path = await save_upload_file(doc, UPLOAD_DIR_DOCS)
         new_doc_paths.append(path)
 
     # Delete removed images
