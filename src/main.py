@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from .api import register_routes
 from .logging import configure_logging, LogLevels
 import os
+from .database.core import Base, engine
 
 configure_logging(LogLevels.info)
 
@@ -24,6 +25,6 @@ app.add_middleware(
 """ Only uncomment below to create new tables, 
 otherwise the tests will fail if not connected
 """
-# Base.metadata.create_all(bind=engine)
+Base.metadata.create_all(bind=engine)
 
 register_routes(app)

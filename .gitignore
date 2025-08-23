@@ -19,7 +19,7 @@ uploads
 .pytest_cache/
 
 # Environment variables
-.env
+# .env
 
 # Docker
 *.log
