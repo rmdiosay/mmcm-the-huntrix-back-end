@@ -5,10 +5,12 @@ from src.database import get_db
 from src.services.auth_service import get_current_user
 from src.entities.schemas import TokenData, BuyPropertySchema
 from ..services.buy_service import (
-    create_buy_property_service,
-    get_buy_properties_service,
-    update_buy_property_service,
-    delete_buy_property_service,
+    create_buy_property,
+    get_buy_properties,
+    get_user_buy_listings,
+    get_user_buy_purchases,
+    update_buy_property,
+    delete_buy_property,
 )
 
 router = APIRouter(prefix="/buy", tags=["Buy"])
@@ -27,11 +29,13 @@ async def create_buy(
     amenities: List[str] = Form([]),
     images: List[UploadFile] = File([]),
     documents: List[UploadFile] = File([]),
+    latitude: Optional[float] = Form(None),
+    longitude: Optional[float] = Form(None),
     slug: Optional[str] = Form(None),
     db: Session = Depends(get_db),
-    token_data: TokenData = Depends(get_current_user)
+    token_data: TokenData = Depends(get_current_user),
 ):
-    return await create_buy_property_service(
+    return await create_buy_property(
         db=db,
         user_id=token_data.get_uuid(),
         name=name,
@@ -45,15 +49,29 @@ async def create_buy(
         amenities=amenities,
         images=images,
         documents=documents,
+        latitude=latitude,
+        longitude=longitude,
         slug=slug,
     )
 
 
 @router.get("", response_model=list[BuyPropertySchema])
-def list_buy(
+def list_buy(db: Session = Depends(get_db)):
+    return get_buy_properties(db)
+
+
+@router.get("/listings", response_model=List[BuyPropertySchema])
+def list_user_property_listings(
     db: Session = Depends(get_db), token_data: TokenData = Depends(get_current_user)
 ):
-    return get_buy_properties_service(db, token_data.get_uuid())
+    return get_user_buy_listings(db, token_data.get_uuid())
+
+
+@router.get("/purchases", response_model=List[BuyPropertySchema])
+def list_user_purchases(
+    db: Session = Depends(get_db), token_data: TokenData = Depends(get_current_user)
+):
+    return get_user_buy_purchases(db, token_data.get_uuid())
 
 
 @router.put("/{slug}", response_model=BuyPropertySchema)
@@ -72,10 +90,12 @@ async def update_buy(
     documents: List[UploadFile] = File([]),
     remove_images: List[str] = Form([]),
     remove_documents: List[str] = Form([]),
+    latitude: Optional[float] = Form(None),
+    longitude: Optional[float] = Form(None),
     new_slug: Optional[str] = Form(None),
     db: Session = Depends(get_db),
 ):
-    updated = await update_buy_property_service(
+    updated = await update_buy_property(
         db=db,
         slug=slug,
         name=name,
@@ -100,7 +120,7 @@ async def update_buy(
 
 @router.delete("/{slug}", status_code=204)
 def delete_buy(slug: str, db: Session = Depends(get_db)):
-    success = delete_buy_property_service(db, slug)
+    success = delete_buy_property(db, slug)
     if not success:
         raise HTTPException(status_code=404, detail="Buy property not found")
     return

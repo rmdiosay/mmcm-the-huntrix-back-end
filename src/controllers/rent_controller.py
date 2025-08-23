@@ -7,7 +7,8 @@ from src.entities.schemas import TokenData, RentPropertySchema
 from ..services.rent_service import (
     create_rent_property,
     get_rent_properties,
-    get_my_rent_properties,
+    get_user_rent_listings,
+    get_user_rent_rentals,
     update_rent_property,
     delete_rent_property,
 )
@@ -27,14 +28,16 @@ async def create_rent(
     description: str = Form(""),
     amenities: List[str] = Form([]),
     images: List[UploadFile] = File([]),
+    lease_term: Optional[str] = Form(None),
+    latitude: Optional[float] = Form(None),
+    longitude: Optional[float] = Form(None),
     slug: Optional[str] = Form(None),
     db: Session = Depends(get_db),
     token_data: TokenData = Depends(get_current_user),
 ):
-    print(type(token_data))
     return await create_rent_property(
         db=db,
-        user_id=token_data.get_uuid(),
+        lister_id=token_data.get_uuid(),
         name=name,
         price=price,
         address=address,
@@ -45,20 +48,30 @@ async def create_rent(
         description=description,
         amenities=amenities,
         images=images,
+        lease_term=lease_term,
+        latitude=latitude,
+        longitude=longitude,
         slug=slug,
     )
 
 
-@router.get("", response_model=list[RentPropertySchema])
+@router.get("", response_model=List[RentPropertySchema])
 def list_rent(db: Session = Depends(get_db)):
     return get_rent_properties(db)
 
 
-@router.get("", response_model=list[RentPropertySchema])
-def list_current_user_rent(
+@router.get("/listings", response_model=List[RentPropertySchema])
+def list_user_rent_listings(
     db: Session = Depends(get_db), token_data: TokenData = Depends(get_current_user)
 ):
-    return get_my_rent_properties(db, token_data.get_uuid())
+    return get_user_rent_listings(db, token_data.get_uuid())
+
+
+@router.get("/rentals", response_model=List[RentPropertySchema])
+def list_user_rentals(
+    db: Session = Depends(get_db), token_data: TokenData = Depends(get_current_user)
+):
+    return get_user_rent_rentals(db, token_data.get_uuid())
 
 
 @router.put("/{slug}", response_model=RentPropertySchema)
@@ -75,6 +88,9 @@ async def update_rent(
     amenities: List[str] = Form([]),
     images: List[UploadFile] = File([]),
     remove_images: List[str] = Form([]),
+    lease_term: Optional[str] = Form(None),
+    latitude: Optional[float] = Form(None),
+    longitude: Optional[float] = Form(None),
     new_slug: Optional[str] = Form(None),
     db: Session = Depends(get_db),
 ):
@@ -92,6 +108,9 @@ async def update_rent(
         amenities=amenities,
         images=images,
         remove_images=remove_images,
+        lease_term=lease_term,
+        latitude=latitude,
+        longitude=longitude,
         new_slug=new_slug,
     )
     if not updated:

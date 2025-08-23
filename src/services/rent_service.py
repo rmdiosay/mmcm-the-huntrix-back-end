@@ -3,10 +3,7 @@ from uuid import UUID
 from fastapi import UploadFile
 from typing import List, Optional
 from src.entities.models import RentProperty
-from src.entities.schemas import (
-    RentPropertyCreateSchema,
-    RentPropertyUpdateSchema,
-)
+from src.entities.schemas import RentPropertyCreateSchema, RentPropertyUpdateSchema
 from src.entities.utils import generate_slug, delete_file_safe, save_upload_file
 
 UPLOAD_DIR_IMAGES = "uploads/images"
@@ -15,7 +12,7 @@ UPLOAD_DIR_IMAGES = "uploads/images"
 # ---------------- CREATE ----------------
 async def create_rent_property(
     db: Session,
-    user_id: str,
+    lister_id: str,
     name: str,
     price: str,
     address: str,
@@ -26,17 +23,17 @@ async def create_rent_property(
     description: str,
     amenities: List[str],
     images: List[UploadFile],
+    lease_term: Optional[str] = None,
+    latitude: Optional[float] = None,
+    longitude: Optional[float] = None,
     slug: Optional[str] = None,
 ):
     if not slug:
         slug = generate_slug(name)
 
-    image_paths = []
-    for image in images:
-        path = await save_upload_file(image, UPLOAD_DIR_IMAGES)
-        image_paths.append(path)
+    image_paths = [await save_upload_file(img, UPLOAD_DIR_IMAGES) for img in images]
 
-    rent = RentPropertyCreateSchema(
+    rent_data = RentPropertyCreateSchema(
         slug=slug,
         name=name,
         price=price,
@@ -48,9 +45,12 @@ async def create_rent_property(
         description=description,
         amenities=amenities,
         images=image_paths,
+        lease_term=lease_term,
+        latitude=latitude,
+        longitude=longitude,
     )
 
-    db_property = RentProperty(**rent.model_dump(), user_id=user_id)
+    db_property = RentProperty(**rent_data.model_dump(), lister_id=lister_id)
     db.add(db_property)
     db.commit()
     db.refresh(db_property)
@@ -62,8 +62,12 @@ def get_rent_properties(db: Session):
     return db.query(RentProperty).all()
 
 
-def get_my_rent_properties(db: Session, user_id: UUID):
-    return db.query(RentProperty).filter(RentProperty.user_id == user_id).all()
+def get_user_rent_listings(db: Session, lister_id: UUID):
+    return db.query(RentProperty).filter(RentProperty.lister_id == lister_id).all()
+
+
+def get_user_rent_rentals(db: Session, tenant_id: UUID):
+    return db.query(RentProperty).filter(RentProperty.tenant_id == tenant_id).all()
 
 
 # ---------------- UPDATE ----------------
@@ -81,6 +85,9 @@ async def update_rent_property(
     amenities: List[str],
     images: List[UploadFile],
     remove_images: List[str],
+    lease_term: Optional[str] = None,
+    latitude: Optional[float] = None,
+    longitude: Optional[float] = None,
     new_slug: Optional[str] = None,
 ):
     db_property = db.query(RentProperty).filter(RentProperty.slug == slug).first()
@@ -88,16 +95,12 @@ async def update_rent_property(
         return None
 
     # Save new images
-    new_image_paths = []
-    for image in images:
-        path = await save_upload_file(image, UPLOAD_DIR_IMAGES)
-        new_image_paths.append(path)
+    new_image_paths = [await save_upload_file(img, UPLOAD_DIR_IMAGES) for img in images]
 
     # Delete removed images
     for img_path in remove_images:
         delete_file_safe(img_path)
 
-    # Keep existing + add new ones
     updated_images = [img for img in db_property.images if img not in remove_images]
     updated_images.extend(new_image_paths)
 
@@ -117,6 +120,9 @@ async def update_rent_property(
         amenities=amenities,
         images=updated_images,
         remove_images=remove_images,
+        lease_term=lease_term,
+        latitude=latitude,
+        longitude=longitude,
     )
 
     for key, value in update_data.model_dump(exclude={"remove_images"}).items():
@@ -133,7 +139,6 @@ def delete_rent_property(db: Session, slug: str):
     if not db_property:
         return False
 
-    # Delete all images from disk
     for img_path in db_property.images or []:
         delete_file_safe(img_path)
 

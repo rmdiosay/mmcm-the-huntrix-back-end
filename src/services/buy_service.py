@@ -14,7 +14,7 @@ UPLOAD_DIR_DOCS = "uploads/documents"
 
 
 # ---------------- CREATE ----------------
-async def create_buy_property_service(
+async def create_buy_property(
     db: Session,
     user_id: UUID,
     name: str,
@@ -66,12 +66,20 @@ async def create_buy_property_service(
 
 
 # ---------------- READ ----------------
-def get_buy_properties_service(db: Session, user_id: UUID):
-    return db.query(BuyProperty).filter(BuyProperty.user_id == user_id).all()
+def get_buy_properties(db: Session):
+    return db.query(BuyProperty).all()
+
+
+def get_user_buy_listings(db: Session, lister_id: UUID):
+    return db.query(BuyProperty).filter(BuyProperty.lister_id == lister_id).all()
+
+
+def get_user_buy_purchases(db: Session, buyer_id: UUID):
+    return db.query(BuyProperty).filter(BuyProperty.buyer_id == buyer_id).all()
 
 
 # ---------------- UPDATE ----------------
-async def update_buy_property_service(
+async def update_buy_property(
     db: Session,
     slug: str,
     name: str,
@@ -87,6 +95,8 @@ async def update_buy_property_service(
     documents: List[UploadFile],
     remove_images: List[str],
     remove_documents: List[str],
+    latitude: Optional[float] = None,
+    longitude: Optional[float] = None,
     new_slug: Optional[str] = None,
 ):
     db_property = db.query(BuyProperty).filter(BuyProperty.slug == slug).first()
@@ -140,9 +150,13 @@ async def update_buy_property_service(
         documents=updated_documents,
         remove_images=remove_images,
         remove_documents=remove_documents,
+        latitude=latitude,
+        longitude=longitude,
     )
 
-    for key, value in update_data.model_dump(exclude={"remove_images", "remove_documents"}).items():
+    for key, value in update_data.model_dump(
+        exclude={"remove_images", "remove_documents"}
+    ).items():
         setattr(db_property, key, value)
 
     db.commit()
@@ -151,7 +165,7 @@ async def update_buy_property_service(
 
 
 # ---------------- DELETE ----------------
-def delete_buy_property_service(db: Session, slug: str):
+def delete_buy_property(db: Session, slug: str):
     db_property = db.query(BuyProperty).filter(BuyProperty.slug == slug).first()
     if not db_property:
         return False

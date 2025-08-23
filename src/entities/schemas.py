@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, UUID4
 from uuid import UUID
 from typing import List, Optional
 
@@ -56,23 +56,36 @@ class RentPropertyBase(BaseModel):
     bath: int
     size: str
     is_popular: bool = False
+    is_available: bool = True
     description: Optional[str] = ""
     amenities: List[str] = []
     images: List[str] = []
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
 
 
 class RentPropertyCreateSchema(RentPropertyBase):
+    lease_term: Optional[str] = None
     slug: Optional[str] = None
+
+
+class RentPropertyUpdateSchema(RentPropertyBase):
+    lease_term: Optional[str] = None
+    slug: Optional[str] = None
+    remove_images: List[str] = []
+
+
+class RentPropertySchema(RentPropertyBase):
+    id: UUID4
+    slug: str
+    lister_id: UUID4
+    tenant_id: Optional[UUID4] = None
+    lease_term: Optional[str] = None
 
 
 class BuyPropertyCreateSchema(RentPropertyBase):
     slug: Optional[str] = None
     documents: List[str] = []
-
-
-class RentPropertyUpdateSchema(RentPropertyBase):
-    slug: Optional[str] = None
-    remove_images: List[str] = []
 
 
 class BuyPropertyUpdateSchema(RentPropertyBase):
@@ -82,11 +95,10 @@ class BuyPropertyUpdateSchema(RentPropertyBase):
     remove_documents: List[str] = []
 
 
-class RentPropertySchema(RentPropertyBase):
-    id: UUID
-    user_id: UUID
+class BuyPropertySchema(RentPropertyBase):
+    id: UUID4
     slug: str
-
-
-class BuyPropertySchema(RentPropertySchema):
+    lister_id: UUID4
+    buyer_id: Optional[UUID4] = None
+    lease_term: Optional[str] = None
     documents: List[str]
