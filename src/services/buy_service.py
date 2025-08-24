@@ -1,6 +1,5 @@
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
-from fastapi import HTTPException, status
 from uuid import UUID
 import uuid
 from datetime import datetime
@@ -20,31 +19,21 @@ UPLOAD_DIR_DOCS = "uploads/documents"
 # ---------------- CREATE ----------------
 async def create_buy_property(
     db: Session,
-    user_id: UUID,
+    lister_id: UUID,
     name: str,
     price: float,
     address: str,
     bed: int,
     bath: int,
     size: str,
-    is_popular: bool,
     description: str,
     amenities: List[str],
     images: List[UploadFile],
     documents: List[UploadFile],
     latitude: Optional[float] = None,
     longitude: Optional[float] = None,
-    slug: Optional[str] = None,
 ):
-    if not slug:
-        slug = generate_slug(name)
-
-    existing = db.query(BuyProperty).filter(BuyProperty.slug == slug).first()
-    if existing:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"A property with slug '{slug}' already exists.",
-        )
+    slug = generate_slug(name, db)
 
     image_paths = []
     for image in images:
@@ -64,14 +53,15 @@ async def create_buy_property(
         bed=bed,
         bath=bath,
         size=size,
-        is_popular=is_popular,
         description=description,
         amenities=amenities,
         images=image_paths,
         documents=document_paths,
+        latitude=latitude,
+        longitude=longitude,
     )
 
-    db_property = BuyProperty(**buy.model_dump(), lister_id=user_id)
+    db_property = BuyProperty(**buy.model_dump(), lister_id=lister_id)
     db.add(db_property)
     db.commit()
     db.refresh(db_property)
@@ -101,7 +91,6 @@ async def update_buy_property(
     bed: int,
     bath: int,
     size: str,
-    is_popular: bool,
     description: str,
     amenities: List[str],
     images: List[UploadFile],
@@ -110,7 +99,6 @@ async def update_buy_property(
     remove_documents: List[str],
     latitude: Optional[float] = None,
     longitude: Optional[float] = None,
-    new_slug: Optional[str] = None,
 ):
     db_property = db.query(BuyProperty).filter(BuyProperty.slug == slug).first()
     if not db_property:
@@ -145,19 +133,7 @@ async def update_buy_property(
     ]
     updated_documents.extend(new_doc_paths)
 
-    if not new_slug:
-        new_slug = db_property.slug
-
-    existing = (
-        db.query(BuyProperty)
-        .filter(BuyProperty.slug == new_slug, BuyProperty.id != db_property.id)
-        .first()
-    )
-    if existing:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"A property with slug '{new_slug}' already exists.",
-        )
+    new_slug = generate_slug(name, db)
 
     update_data = BuyPropertyUpdateSchema(
         slug=new_slug,
@@ -167,7 +143,6 @@ async def update_buy_property(
         bed=bed,
         bath=bath,
         size=size,
-        is_popular=is_popular,
         description=description,
         amenities=amenities,
         images=updated_images,

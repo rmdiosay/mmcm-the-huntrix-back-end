@@ -1,6 +1,5 @@
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
-from fastapi import HTTPException, status
 from uuid import UUID
 import uuid
 from datetime import datetime
@@ -23,24 +22,14 @@ async def create_rent_property(
     bed: int,
     bath: int,
     size: str,
-    is_popular: bool,
     description: str,
     amenities: List[str],
     images: List[UploadFile],
     lease_term: Optional[int] = None,
     latitude: Optional[float] = None,
     longitude: Optional[float] = None,
-    slug: Optional[str] = None,
 ):
-    if not slug:
-        slug = generate_slug(name)
-
-    existing = db.query(RentProperty).filter(RentProperty.slug == slug).first()
-    if existing:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"A property with slug '{slug}' already exists.",
-        )
+    slug = generate_slug(name, db)
 
     image_paths = [await save_upload_file(img, UPLOAD_DIR_IMAGES) for img in images]
 
@@ -52,7 +41,6 @@ async def create_rent_property(
         bed=bed,
         bath=bath,
         size=size,
-        is_popular=is_popular,
         description=description,
         amenities=amenities,
         images=image_paths,
@@ -91,7 +79,6 @@ async def update_rent_property(
     bed: int,
     bath: int,
     size: str,
-    is_popular: bool,
     description: str,
     amenities: List[str],
     images: List[UploadFile],
@@ -99,7 +86,6 @@ async def update_rent_property(
     lease_term: Optional[int] = None,
     latitude: Optional[float] = None,
     longitude: Optional[float] = None,
-    new_slug: Optional[str] = None,
 ):
     db_property = db.query(RentProperty).filter(RentProperty.slug == slug).first()
     if not db_property:
@@ -115,19 +101,8 @@ async def update_rent_property(
     updated_images = [img for img in db_property.images if img not in remove_images]
     updated_images.extend(new_image_paths)
 
-    if not new_slug:
-        new_slug = db_property.slug
-
-    existing = (
-        db.query(RentProperty)
-        .filter(RentProperty.slug == new_slug, RentProperty.id != db_property.id)
-        .first()
-    )
-    if existing:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"A property with slug '{new_slug}' already exists.",
-        )
+    # Always regenerate slug from new name
+    new_slug = generate_slug(name, db)
 
     update_data = RentPropertyUpdateSchema(
         slug=new_slug,
@@ -137,7 +112,6 @@ async def update_rent_property(
         bed=bed,
         bath=bath,
         size=size,
-        is_popular=is_popular,
         description=description,
         amenities=amenities,
         images=updated_images,

@@ -1,5 +1,7 @@
-from slugify import slugify
-import uuid
+from sqlalchemy.orm import Session
+from src.entities.models import RentProperty
+import random
+import string
 import os
 from uuid import uuid4
 from slowapi import Limiter
@@ -9,8 +11,24 @@ from slowapi.util import get_remote_address
 limiter = Limiter(key_func=get_remote_address)
 
 
-def generate_slug(name: str) -> str:
-    return slugify(name) + "-" + str(uuid.uuid4())[:8]
+def generate_slug(name: str, db: Session) -> str:
+    """
+    Generate a slug from the property name:
+    - lowercase
+    - replace spaces with hyphens
+    - ensure uniqueness by adding -xxx if conflict
+    """
+    base_slug = name.lower().strip().replace(" ", "-")
+    slug = base_slug
+
+    # Ensure uniqueness
+    existing = db.query(RentProperty).filter(RentProperty.slug == slug).first()
+    while existing:
+        suffix = "".join(random.choices(string.ascii_lowercase + string.digits, k=3))
+        slug = f"{base_slug}-{suffix}"
+        existing = db.query(RentProperty).filter(RentProperty.slug == slug).first()
+
+    return slug
 
 
 async def save_upload_file(file, folder: str) -> str:

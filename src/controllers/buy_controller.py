@@ -30,34 +30,30 @@ async def create_buy(
     bed: int = Form(...),
     bath: int = Form(...),
     size: str = Form(...),
-    is_popular: bool = Form(False),
     description: str = Form(""),
     amenities: List[str] = Form([]),
     images: List[UploadFile] = File([]),
     documents: List[UploadFile] = File([]),
     latitude: Optional[float] = Form(None),
     longitude: Optional[float] = Form(None),
-    slug: Optional[str] = Form(None),
     db: Session = Depends(get_db),
     token_data: TokenData = Depends(get_current_user),
 ):
     return await create_buy_property(
         db=db,
-        user_id=token_data.get_uuid(),
+        lister_id=token_data.get_uuid(),
         name=name,
         price=price,
         address=address,
         bed=bed,
         bath=bath,
         size=size,
-        is_popular=is_popular,
         description=description,
         amenities=amenities,
         images=images,
         documents=documents,
         latitude=latitude,
         longitude=longitude,
-        slug=slug,
     )
 
 
@@ -89,7 +85,6 @@ async def update_buy(
     bed: int = Form(...),
     bath: int = Form(...),
     size: str = Form(...),
-    is_popular: bool = Form(False),
     description: str = Form(""),
     amenities: List[str] = Form([]),
     images: List[UploadFile] = File([]),
@@ -98,7 +93,6 @@ async def update_buy(
     remove_documents: List[str] = Form([]),
     latitude: Optional[float] = Form(None),
     longitude: Optional[float] = Form(None),
-    new_slug: Optional[str] = Form(None),
     db: Session = Depends(get_db),
 ):
     updated = await update_buy_property(
@@ -110,14 +104,14 @@ async def update_buy(
         bed=bed,
         bath=bath,
         size=size,
-        is_popular=is_popular,
         description=description,
         amenities=amenities,
         images=images,
         documents=documents,
         remove_images=remove_images,
         remove_documents=remove_documents,
-        new_slug=new_slug,
+        latitude=latitude,
+        longitude=longitude,
     )
     if not updated:
         raise HTTPException(status_code=404, detail="Buy property not found")

@@ -30,14 +30,12 @@ async def create_rent(
     bed: int = Form(...),
     bath: int = Form(...),
     size: str = Form(...),
-    is_popular: bool = Form(False),
     description: str = Form(""),
     amenities: List[str] = Form([]),
     images: List[UploadFile] = File([]),
     lease_term: Optional[int] = Form(None),
     latitude: Optional[float] = Form(None),
     longitude: Optional[float] = Form(None),
-    slug: Optional[str] = Form(None),
     db: Session = Depends(get_db),
     token_data: TokenData = Depends(get_current_user),
 ):
@@ -50,14 +48,12 @@ async def create_rent(
         bed=bed,
         bath=bath,
         size=size,
-        is_popular=is_popular,
         description=description,
         amenities=amenities,
         images=images,
         lease_term=lease_term,
         latitude=latitude,
         longitude=longitude,
-        slug=slug,
     )
 
 
@@ -89,7 +85,6 @@ async def update_rent(
     bed: int = Form(...),
     bath: int = Form(...),
     size: str = Form(...),
-    is_popular: bool = Form(False),
     description: str = Form(""),
     amenities: List[str] = Form([]),
     images: List[UploadFile] = File([]),
@@ -97,7 +92,6 @@ async def update_rent(
     lease_term: Optional[int] = Form(None),
     latitude: Optional[float] = Form(None),
     longitude: Optional[float] = Form(None),
-    new_slug: Optional[str] = Form(None),
     db: Session = Depends(get_db),
 ):
     updated = await update_rent_property(
@@ -109,7 +103,6 @@ async def update_rent(
         bed=bed,
         bath=bath,
         size=size,
-        is_popular=is_popular,
         description=description,
         amenities=amenities,
         images=images,
@@ -117,7 +110,6 @@ async def update_rent(
         lease_term=lease_term,
         latitude=latitude,
         longitude=longitude,
-        new_slug=new_slug,
     )
     if not updated:
         raise HTTPException(status_code=404, detail="Rent property not found")
