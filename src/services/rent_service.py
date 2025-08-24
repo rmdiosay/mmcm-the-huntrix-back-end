@@ -141,7 +141,7 @@ def delete_rent_property(db: Session, slug: str):
 
 
 # ---------------- RentalService ----------------
-def _update_user_stats(user, amount: float, is_rental: bool = False):
+def _update_user_stats(user, amount: float):
     """
     Update a user's stats after a sale or rental.
     - Add amount to rental
@@ -151,17 +151,8 @@ def _update_user_stats(user, amount: float, is_rental: bool = False):
     """
     user.rental += amount
     user.transactions += 1
-
-    user.property_rental = int(user.sale // 10000)
-
-    user.points = (
-        user.property_sale
-        + user.property_rental
-        + user.direct_referrals
-        + user.secondary_referrals
-        + user.tertiary_referrals
-        + user.positive_reviews
-    )
+    user.property_rental = user.rental / 10000
+    user.points += user.property_rental
 
 
 class RentalService:
@@ -254,7 +245,7 @@ class RentalService:
                 )
                 if not lister:
                     raise Exception("Lister not found")
-                _update_user_stats(lister, rental_value, is_rental=True)
+                _update_user_stats(lister, rental_value)
 
                 # Update tenant stats
                 tenant = (
@@ -265,7 +256,7 @@ class RentalService:
                 )
                 if not tenant:
                     raise Exception("Tenant not found")
-                _update_user_stats(tenant, rental_value, is_rental=True)
+                _update_user_stats(tenant, rental_value)
 
                 return rent_property
 

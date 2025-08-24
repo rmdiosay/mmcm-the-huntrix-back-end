@@ -157,6 +157,7 @@ class Review(Base):
     rating = Column(Integer, nullable=False)
     comment = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+    is_positive = Column(Boolean, default=False)
 
     user_id = Column(String(36), ForeignKey("users.id"), nullable=False)
     user = relationship("User", back_populates="reviews")

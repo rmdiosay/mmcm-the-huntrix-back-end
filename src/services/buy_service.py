@@ -198,7 +198,7 @@ def _update_user_stats(user, sale_amount: float):
     """
     user.sale += sale_amount
     user.transactions += 1
-    user.property_sale = int(user.sale // 10000)
+    user.property_sale = user.sale / 10000
     user.points += user.property_sale
 
 

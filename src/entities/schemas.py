@@ -1,5 +1,6 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 from typing import List, Optional
+from datetime import datetime
 
 
 class RegisterUserRequest(BaseModel):
@@ -130,3 +131,28 @@ class PendingSaleRequest(BaseModel):
 
 class ConfirmSaleRequest(BaseModel):
     lister_buyer_id: str
+
+
+class ReviewBase(BaseModel):
+    rating: int = Field(..., ge=1, le=5)  # Assuming rating is 1-5
+    comment: Optional[str] = None
+    rent_property_id: Optional[str] = None
+
+
+class ReviewCreate(ReviewBase):
+    user_id: str  # The reviewer
+
+
+class ReviewRead(ReviewBase):
+    id: str
+    user_id: str
+    created_at: datetime
+    is_positive: bool
+
+    class Config:
+        orm_mode = True
+
+
+class ReviewUpdate(BaseModel):
+    rating: Optional[int] = Field(None, ge=1, le=5)
+    comment: Optional[str] = None

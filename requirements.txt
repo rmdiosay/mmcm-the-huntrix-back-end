@@ -12,3 +12,5 @@ python-multipart
 email-validator
 slugify
 supabase
+textblob
+better-profanity

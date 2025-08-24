@@ -1,17 +1,10 @@
 from fastapi import FastAPI
-from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from .api import register_routes
-import os
 from .database import Base, engine
 
-
-# Create folders inside the container at startup
-os.makedirs("uploads/images", exist_ok=True)
-os.makedirs("uploads/documents", exist_ok=True)
-
 app = FastAPI()
-app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5174"],
