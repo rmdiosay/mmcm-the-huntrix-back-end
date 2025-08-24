@@ -9,7 +9,7 @@ load_dotenv()
 
 """ You can add a DATABASE_URL environment variable to your .env file """
 DATABASE_URL = os.getenv("DATABASE_URL")
-DB_NAME = "postgres"
+DB_NAME = "test"
 
 """ Or hard code SQLite here """
 # DATABASE_URL = "sqlite:///./test.db"

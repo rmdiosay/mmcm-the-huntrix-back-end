@@ -3,24 +3,26 @@ from sqlalchemy import (
     String,
     Integer,
     Boolean,
-    ARRAY,
     ForeignKey,
     DateTime,
     Float,
     Text,
 )
 from sqlalchemy.orm import relationship
-from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.ext.mutable import MutableList
+from sqlalchemy.dialects.sqlite import JSON
 import uuid
 from datetime import datetime
 from ..database import Base
 
 
+def generate_uuid():
+    return str(uuid.uuid4())  # Always store as string
+
+
 class User(Base):
     __tablename__ = "users"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(String(36), primary_key=True, default=generate_uuid)
     email = Column(String, unique=True, nullable=False)
     first_name = Column(String, nullable=False)
     last_name = Column(String, nullable=False)
@@ -31,7 +33,7 @@ class User(Base):
     transactions = Column(Integer, default=0)
     referral_code = Column(Integer, nullable=False)
     is_verified = Column(Boolean, default=False)
-    referred_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    referred_by_id = Column(String(36), ForeignKey("users.id"), nullable=True)
     sale = Column(Integer, default=0)
     rental = Column(Integer, default=0)
     property_sale = Column(Integer, default=0)
@@ -40,6 +42,7 @@ class User(Base):
     secondary_referrals = Column(Integer, default=0)
     tertiary_referrals = Column(Integer, default=0)
     positive_reviews = Column(Integer, default=0)
+    boosts = Column(Integer, default=0)
 
     referrals = relationship("User", backref="referred_by", remote_side=[id])
     rent_properties = relationship(
@@ -58,14 +61,11 @@ class User(Base):
         "Review", back_populates="user", cascade="all, delete-orphan"
     )
 
-    def __repr__(self):
-        return f"<User(email='{self.email}', first_name='{self.first_name}', last_name='{self.last_name}')>"
-
 
 class RentProperty(Base):
     __tablename__ = "rent_properties"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(String(36), primary_key=True, default=generate_uuid)
     slug = Column(String, unique=True, nullable=False)
     name = Column(String, nullable=False)
     price = Column(Float, nullable=False)
@@ -77,17 +77,17 @@ class RentProperty(Base):
     is_available = Column(Boolean, default=True)
     lease_term = Column(Integer, nullable=False)
     description = Column(String)
-    amenities = Column(MutableList.as_mutable(ARRAY(String)))
-    images = Column(MutableList.as_mutable(ARRAY(String)))
+    amenities = Column(JSON)
+    images = Column(JSON)
     latitude = Column(Float, nullable=True)
     longitude = Column(Float, nullable=True)
 
-    lister_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    lister_id = Column(String(36), ForeignKey("users.id"), nullable=False)
     lister = relationship(
         "User", back_populates="rent_properties", foreign_keys=[lister_id]
     )
 
-    tenant_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    tenant_id = Column(String(36), ForeignKey("users.id"), nullable=True)
     tenant = relationship(
         "User", back_populates="rented_properties", foreign_keys=[tenant_id]
     )
@@ -100,7 +100,7 @@ class RentProperty(Base):
 class BuyProperty(Base):
     __tablename__ = "buy_properties"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(String(36), primary_key=True, default=generate_uuid)
     slug = Column(String, unique=True, nullable=False)
     name = Column(String, nullable=False)
     price = Column(Float, nullable=False)
@@ -111,18 +111,19 @@ class BuyProperty(Base):
     is_popular = Column(Boolean, default=False)
     is_available = Column(Boolean, default=True)
     description = Column(String)
-    amenities = Column(MutableList.as_mutable(ARRAY(String)))
-    documents = Column(MutableList.as_mutable(ARRAY(String)))
-    images = Column(MutableList.as_mutable(ARRAY(String)))
+    amenities = Column(JSON, nullable=True)
+    document_list = Column(JSON, nullable=True)
+    documents = Column(JSON, nullable=True)
+    images = Column(JSON, nullable=True)
     latitude = Column(Float, nullable=True)
     longitude = Column(Float, nullable=True)
 
-    lister_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    lister_id = Column(String(36), ForeignKey("users.id"), nullable=False)
     lister = relationship(
         "User", back_populates="buy_properties", foreign_keys=[lister_id]
     )
 
-    buyer_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    buyer_id = Column(String(36), ForeignKey("users.id"), nullable=True)
     buyer = relationship(
         "User", back_populates="bought_properties", foreign_keys=[buyer_id]
     )
@@ -131,69 +132,46 @@ class BuyProperty(Base):
 class ListerTenant(Base):
     __tablename__ = "lister_tenants"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    rent_id = Column(
-        UUID(as_uuid=True), ForeignKey("rent_properties.id"), nullable=False
-    )
-    lister_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
-    tenant_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    rent_id = Column(String(36), ForeignKey("rent_properties.id"), nullable=False)
+    lister_id = Column(String(36), ForeignKey("users.id"), nullable=False)
+    tenant_id = Column(String(36), ForeignKey("users.id"), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
-
-    rent = relationship("RentProperty", backref="pending_tenants")
-    lister = relationship("User", foreign_keys=[lister_id])
-    tenant = relationship("User", foreign_keys=[tenant_id])
-
-    def __repr__(self):
-        return f"<ListerTenant(rent_id='{self.rent_id}', tenant_id='{self.tenant_id}')>"
 
 
 class ListerBuyer(Base):
     __tablename__ = "lister_buyers"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    buy_id = Column(UUID(as_uuid=True), ForeignKey("buy_properties.id"), nullable=False)
-    lister_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
-    buyer_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    buy_id = Column(String(36), ForeignKey("buy_properties.id"), nullable=False)
+    lister_id = Column(String(36), ForeignKey("users.id"), nullable=False)
+    buyer_id = Column(String(36), ForeignKey("users.id"), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
-
-    buy = relationship("BuyProperty", backref="pending_buyers")
-    lister = relationship("User", foreign_keys=[lister_id])
-    buyer = relationship("User", foreign_keys=[buyer_id])
-
-    def __repr__(self):
-        return f"<ListerBuyer(buy_id='{self.buy_id}', buyer_id='{self.buyer_id}')>"
 
 
 class Review(Base):
     __tablename__ = "reviews"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(String(36), primary_key=True, default=generate_uuid)
     rating = Column(Integer, nullable=False)
     comment = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    user_id = Column(String(36), ForeignKey("users.id"), nullable=False)
     user = relationship("User", back_populates="reviews")
 
     rent_property_id = Column(
-        UUID(as_uuid=True), ForeignKey("rent_properties.id"), nullable=True
+        String(36), ForeignKey("rent_properties.id"), nullable=True
     )
-
     rent_property = relationship("RentProperty", back_populates="reviews")
 
 
 class Message(Base):
     __tablename__ = "messages"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    sender_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
-    receiver_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    sender_id = Column(String(36), ForeignKey("users.id"), nullable=False)
+    receiver_id = Column(String(36), ForeignKey("users.id"), nullable=False)
     content = Column(Text, nullable=False)
     is_read = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
-
-    sender = relationship("User", foreign_keys=[sender_id])
-    receiver = relationship("User", foreign_keys=[receiver_id])
-
-    def __repr__(self):
-        return f"<Message(sender_id='{self.sender_id}', receiver_id='{self.receiver_id}', content='{self.content[:20]}...')>"

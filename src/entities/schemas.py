@@ -1,5 +1,4 @@
-from pydantic import BaseModel, EmailStr, UUID4
-from uuid import UUID
+from pydantic import BaseModel, EmailStr
 from typing import List, Optional
 
 
@@ -19,14 +18,14 @@ class Token(BaseModel):
 class TokenData(BaseModel):
     user_id: str | None = None
 
-    def get_uuid(self) -> UUID | None:
+    def get_uuid(self) -> str | None:
         if self.user_id:
-            return UUID(self.user_id)
+            return str(self.user_id)
         return None
 
 
 class UserResponse(BaseModel):
-    id: UUID
+    id: str
     email: EmailStr
     first_name: str
     last_name: str
@@ -42,7 +41,7 @@ class UserResponse(BaseModel):
     positive_reviews: Optional[int] = 0
     referral_code: int
     is_verified: bool = False
-    referred_by_id: Optional[UUID] = None
+    referred_by_id: Optional[str] = None
 
     class Config:
         orm_mode = True
@@ -82,49 +81,52 @@ class RentPropertyUpdateSchema(RentPropertyBase):
 
 
 class RentPropertySchema(RentPropertyBase):
-    id: UUID4
+    id: str
     slug: str
-    lister_id: UUID4
-    tenant_id: Optional[UUID4] = None
+    lister_id: str
+    tenant_id: Optional[str] = None
     lease_term: Optional[int] = None
 
 
 class PendingRentalRequest(BaseModel):
-    rent_id: UUID
-    lister_id: UUID
-    tenant_id: UUID
+    rent_id: str
+    lister_id: str
+    tenant_id: str
 
 
 class ConfirmRentalRequest(BaseModel):
-    lister_tenant_id: UUID
+    lister_tenant_id: str
 
 
 class BuyPropertyCreateSchema(RentPropertyBase):
     slug: Optional[str] = None
+    document_list: List[str] = []
     documents: List[str] = []
 
 
 class BuyPropertyUpdateSchema(RentPropertyBase):
     slug: Optional[str] = None
+    document_list: List[str] = []
     documents: List[str] = []
     remove_images: List[str] = []
     remove_documents: List[str] = []
 
 
 class BuyPropertySchema(RentPropertyBase):
-    id: UUID4
+    id: str
     slug: str
-    lister_id: UUID4
-    buyer_id: Optional[UUID4] = None
+    lister_id: str
+    buyer_id: Optional[str] = None
     lease_term: Optional[int] = None
+    document_list: List[str] = []
     documents: List[str]
 
 
 class PendingSaleRequest(BaseModel):
-    buy_id: UUID
-    lister_id: UUID
-    buyer_id: UUID
+    buy_id: str
+    lister_id: str
+    buyer_id: str
 
 
 class ConfirmSaleRequest(BaseModel):
-    lister_buyer_id: UUID
+    lister_buyer_id: str

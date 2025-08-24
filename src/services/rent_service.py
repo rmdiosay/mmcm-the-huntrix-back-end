@@ -1,6 +1,5 @@
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
-from uuid import UUID
 import uuid
 from datetime import datetime
 from fastapi import UploadFile
@@ -29,7 +28,7 @@ async def create_rent_property(
     latitude: Optional[float] = None,
     longitude: Optional[float] = None,
 ):
-    slug = generate_slug(name, db)
+    slug = generate_slug(name, db, RentProperty)
 
     image_paths = [await save_upload_file(img, UPLOAD_DIR_IMAGES) for img in images]
 
@@ -61,11 +60,11 @@ def get_rent_properties(db: Session):
     return db.query(RentProperty).all()
 
 
-def get_user_rent_listings(db: Session, lister_id: UUID):
+def get_user_rent_listings(db: Session, lister_id: str):
     return db.query(RentProperty).filter(RentProperty.lister_id == lister_id).all()
 
 
-def get_user_rent_rentals(db: Session, tenant_id: UUID):
+def get_user_rent_rentals(db: Session, tenant_id: str):
     return db.query(RentProperty).filter(RentProperty.tenant_id == tenant_id).all()
 
 
@@ -102,7 +101,7 @@ async def update_rent_property(
     updated_images.extend(new_image_paths)
 
     # Always regenerate slug from new name
-    new_slug = generate_slug(name, db)
+    new_slug = generate_slug(name, db, RentProperty)
 
     update_data = RentPropertyUpdateSchema(
         slug=new_slug,
@@ -197,7 +196,7 @@ class RentalService:
                     return existing
 
                 new_pending = ListerTenant(
-                    id=uuid.uuid4(),
+                    id=str(uuid.uuid4()),
                     rent_id=rent_id,
                     lister_id=lister_id,
                     tenant_id=tenant_id,

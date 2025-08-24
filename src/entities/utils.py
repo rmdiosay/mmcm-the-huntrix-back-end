@@ -11,22 +11,23 @@ from slowapi.util import get_remote_address
 limiter = Limiter(key_func=get_remote_address)
 
 
-def generate_slug(name: str, db: Session) -> str:
+def generate_slug(name: str, db: Session, model) -> str:
     """
     Generate a slug from the property name:
     - lowercase
     - replace spaces with hyphens
     - ensure uniqueness by adding -xxx if conflict
+    Works for any model with a 'slug' column.
     """
     base_slug = name.lower().strip().replace(" ", "-")
     slug = base_slug
 
-    # Ensure uniqueness
-    existing = db.query(RentProperty).filter(RentProperty.slug == slug).first()
+    # Ensure uniqueness in the given model
+    existing = db.query(model).filter(model.slug == slug).first()
     while existing:
         suffix = "".join(random.choices(string.ascii_lowercase + string.digits, k=3))
         slug = f"{base_slug}-{suffix}"
-        existing = db.query(RentProperty).filter(RentProperty.slug == slug).first()
+        existing = db.query(model).filter(model.slug == slug).first()
 
     return slug
 

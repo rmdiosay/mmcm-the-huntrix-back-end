@@ -1,6 +1,5 @@
 from datetime import timedelta, datetime, timezone
 from typing import Annotated
-from uuid import UUID, uuid4
 from fastapi import Depends, HTTPException
 from passlib.context import CryptContext
 import jwt
@@ -39,7 +38,7 @@ def authenticate_user(email: str, password: str, db: Session) -> User | bool:
     return user
 
 
-def create_access_token(email: str, user_id: UUID, expires_delta: timedelta) -> str:
+def create_access_token(email: str, user_id: str, expires_delta: timedelta) -> str:
     encode = {
         "sub": email,
         "id": str(user_id),
@@ -78,7 +77,6 @@ def register(db: Session, register_user_request: RegisterUserRequest) -> UserRes
         referral_code = generate_unique_referral_code(db)
 
         new_user = User(
-            id=uuid4(),
             email=register_user_request.email,
             first_name=register_user_request.first_name,
             last_name=register_user_request.last_name,

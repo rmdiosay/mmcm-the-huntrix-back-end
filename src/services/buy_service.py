@@ -1,6 +1,5 @@
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
-from uuid import UUID
 import uuid
 from datetime import datetime
 from fastapi import UploadFile
@@ -19,7 +18,7 @@ UPLOAD_DIR_DOCS = "uploads/documents"
 # ---------------- CREATE ----------------
 async def create_buy_property(
     db: Session,
-    lister_id: UUID,
+    lister_id: str,
     name: str,
     price: float,
     address: str,
@@ -28,12 +27,13 @@ async def create_buy_property(
     size: str,
     description: str,
     amenities: List[str],
-    images: List[UploadFile],
-    documents: List[UploadFile],
+    document_list: List[str],
+    images: Optional[List[UploadFile]] = None,
+    documents: Optional[List[UploadFile]] = None,
     latitude: Optional[float] = None,
     longitude: Optional[float] = None,
 ):
-    slug = generate_slug(name, db)
+    slug = generate_slug(name, db, BuyProperty)
 
     image_paths = []
     for image in images:
@@ -55,6 +55,7 @@ async def create_buy_property(
         size=size,
         description=description,
         amenities=amenities,
+        document_list=document_list,
         images=image_paths,
         documents=document_paths,
         latitude=latitude,
@@ -73,11 +74,11 @@ def get_buy_properties(db: Session):
     return db.query(BuyProperty).all()
 
 
-def get_user_buy_listings(db: Session, lister_id: UUID):
+def get_user_buy_listings(db: Session, lister_id: str):
     return db.query(BuyProperty).filter(BuyProperty.lister_id == lister_id).all()
 
 
-def get_user_buy_purchases(db: Session, buyer_id: UUID):
+def get_user_buy_purchases(db: Session, buyer_id: str):
     return db.query(BuyProperty).filter(BuyProperty.buyer_id == buyer_id).all()
 
 
@@ -93,10 +94,11 @@ async def update_buy_property(
     size: str,
     description: str,
     amenities: List[str],
-    images: List[UploadFile],
-    documents: List[UploadFile],
-    remove_images: List[str],
-    remove_documents: List[str],
+    document_list: List[str],
+    images: Optional[List[UploadFile]] = None,
+    documents: Optional[List[UploadFile]] = None,
+    remove_images: Optional[List[str]] = None,
+    remove_documents: Optional[List[str]] = None,
     latitude: Optional[float] = None,
     longitude: Optional[float] = None,
 ):
@@ -133,7 +135,7 @@ async def update_buy_property(
     ]
     updated_documents.extend(new_doc_paths)
 
-    new_slug = generate_slug(name, db)
+    new_slug = generate_slug(name, db, BuyProperty)
 
     update_data = BuyPropertyUpdateSchema(
         slug=new_slug,
@@ -145,6 +147,7 @@ async def update_buy_property(
         size=size,
         description=description,
         amenities=amenities,
+        document_list=document_list,
         images=updated_images,
         documents=updated_documents,
         remove_images=remove_images,

@@ -6,8 +6,6 @@ from src.services.auth_service import get_current_user
 from src.entities.schemas import (
     TokenData,
     RentPropertySchema,
-    PendingRentalRequest,
-    ConfirmRentalRequest,
 )
 from ..services.rent_service import (
     create_rent_property,
@@ -32,7 +30,7 @@ async def create_rent(
     size: str = Form(...),
     description: str = Form(""),
     amenities: List[str] = Form([]),
-    images: List[UploadFile] = File([]),
+    images: Optional[List[UploadFile]] = File(None),
     lease_term: Optional[int] = Form(None),
     latitude: Optional[float] = Form(None),
     longitude: Optional[float] = Form(None),
@@ -87,8 +85,8 @@ async def update_rent(
     size: str = Form(...),
     description: str = Form(""),
     amenities: List[str] = Form([]),
-    images: List[UploadFile] = File([]),
-    remove_images: List[str] = Form([]),
+    images: Optional[List[UploadFile]] = File(None),
+    remove_images: List[str] = Form(None),
     lease_term: Optional[int] = Form(None),
     latitude: Optional[float] = Form(None),
     longitude: Optional[float] = Form(None),
@@ -125,13 +123,18 @@ def delete_rent(slug: str, db: Session = Depends(get_db)):
 
 
 @router.post("/pending", response_model=dict)
-def create_pending_rental(request: PendingRentalRequest, db: Session = Depends(get_db)):
+def create_pending_rental(
+    rent_id: str = Form(...),
+    lister_id: str = Form(...),
+    tenant_id: str = Form(...),
+    db: Session = Depends(get_db),
+):
     service = RentalService(db)
     try:
         pending = service.create_pending_rental(
-            rent_id=str(request.rent_id),
-            lister_id=str(request.lister_id),
-            tenant_id=str(request.tenant_id),
+            rent_id=rent_id,
+            lister_id=lister_id,
+            tenant_id=tenant_id,
         )
         return {"success": True, "pending_id": str(pending.id)}
     except Exception as e:
@@ -139,12 +142,13 @@ def create_pending_rental(request: PendingRentalRequest, db: Session = Depends(g
 
 
 @router.post("/confirm", response_model=dict)
-def confirm_rental(request: ConfirmRentalRequest, db: Session = Depends(get_db)):
+def confirm_rental(
+    lister_tenant_id: str = Form(...),
+    db: Session = Depends(get_db),
+):
     service = RentalService(db)
     try:
-        rent_property = service.confirm_rental(
-            lister_tenant_id=str(request.lister_tenant_id)
-        )
+        rent_property = service.confirm_rental(lister_tenant_id=lister_tenant_id)
         return {
             "success": True,
             "rent_property_id": str(rent_property.id),

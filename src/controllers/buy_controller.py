@@ -6,8 +6,6 @@ from src.services.auth_service import get_current_user
 from src.entities.schemas import (
     TokenData,
     BuyPropertySchema,
-    PendingSaleRequest,
-    ConfirmSaleRequest,
 )
 from ..services.buy_service import (
     create_buy_property,
@@ -32,8 +30,9 @@ async def create_buy(
     size: str = Form(...),
     description: str = Form(""),
     amenities: List[str] = Form([]),
-    images: List[UploadFile] = File([]),
-    documents: List[UploadFile] = File([]),
+    document_list: List[str] = Form([]),
+    images: Optional[List[UploadFile]] = File(None),
+    documents: Optional[List[UploadFile]] = File(None),
     latitude: Optional[float] = Form(None),
     longitude: Optional[float] = Form(None),
     db: Session = Depends(get_db),
@@ -50,6 +49,7 @@ async def create_buy(
         size=size,
         description=description,
         amenities=amenities,
+        document_list=document_list,
         images=images,
         documents=documents,
         latitude=latitude,
@@ -87,10 +87,11 @@ async def update_buy(
     size: str = Form(...),
     description: str = Form(""),
     amenities: List[str] = Form([]),
-    images: List[UploadFile] = File([]),
-    documents: List[UploadFile] = File([]),
-    remove_images: List[str] = Form([]),
-    remove_documents: List[str] = Form([]),
+    document_list: List[str] = Form([]),
+    images: Optional[List[UploadFile]] = File(None),
+    documents: Optional[List[UploadFile]] = File(None),
+    remove_images: List[str] = Form(None),
+    remove_documents: List[str] = Form(None),
     latitude: Optional[float] = Form(None),
     longitude: Optional[float] = Form(None),
     db: Session = Depends(get_db),
@@ -106,6 +107,7 @@ async def update_buy(
         size=size,
         description=description,
         amenities=amenities,
+        document_list=document_list,
         images=images,
         documents=documents,
         remove_images=remove_images,
@@ -127,13 +129,18 @@ def delete_buy(slug: str, db: Session = Depends(get_db)):
 
 
 @router.post("/pending", response_model=dict)
-def create_pending_sale(request: PendingSaleRequest, db: Session = Depends(get_db)):
+def create_pending_sale(
+    buy_id: str = Form(...),
+    lister_id: str = Form(...),
+    buyer_id: str = Form(...),
+    db: Session = Depends(get_db),
+):
     service = SaleService(db)
     try:
         pending = service.create_pending_sale(
-            buy_id=str(request.buy_id),
-            lister_id=str(request.lister_id),
-            buyer_id=str(request.buyer_id),
+            buy_id=buy_id,
+            lister_id=lister_id,
+            buyer_id=buyer_id,
         )
         return {"success": True, "pending_id": str(pending.id)}
     except Exception as e:
@@ -141,12 +148,13 @@ def create_pending_sale(request: PendingSaleRequest, db: Session = Depends(get_d
 
 
 @router.post("/confirm", response_model=dict)
-def confirm_sale(request: ConfirmSaleRequest, db: Session = Depends(get_db)):
+def confirm_sale(
+    lister_buyer_id: str = Form(...),
+    db: Session = Depends(get_db),
+):
     service = SaleService(db)
     try:
-        buy_property = service.confirm_sale(
-            lister_buyer_id=str(request.lister_buyer_id)
-        )
+        buy_property = service.confirm_sale(lister_buyer_id=lister_buyer_id)
         return {
             "success": True,
             "buy_property_id": str(buy_property.id),
