@@ -8,8 +8,6 @@ from src.entities.models import RentProperty, ListerTenant, User
 from src.entities.schemas import RentPropertyCreateSchema, RentPropertyUpdateSchema
 from src.entities.utils import generate_slug, delete_file_safe, save_upload_file
 
-UPLOAD_DIR_IMAGES = "uploads/images"
-
 
 # ---------------- CREATE ----------------
 async def create_rent_property(
@@ -30,7 +28,7 @@ async def create_rent_property(
 ):
     slug = generate_slug(name, db, RentProperty)
 
-    image_paths = [await save_upload_file(img, UPLOAD_DIR_IMAGES) for img in images]
+    image_paths = [await save_upload_file(img, "rent-images") for img in images]
 
     rent_data = RentPropertyCreateSchema(
         slug=slug,
@@ -91,7 +89,7 @@ async def update_rent_property(
         return None
 
     # Save new images
-    new_image_paths = [await save_upload_file(img, UPLOAD_DIR_IMAGES) for img in images]
+    new_image_paths = [await save_upload_file(img, "rent-images") for img in images]
 
     # Delete removed images
     for img_path in remove_images:

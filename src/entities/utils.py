@@ -1,12 +1,11 @@
 from sqlalchemy.orm import Session
-from src.entities.models import RentProperty
 import random
 import string
-import os
+from src.database import supabase
 from uuid import uuid4
 from slowapi import Limiter
 from slowapi.util import get_remote_address
-
+from urllib.parse import urlparse, unquote
 
 limiter = Limiter(key_func=get_remote_address)
 
@@ -33,31 +32,44 @@ def generate_slug(name: str, db: Session, model) -> str:
 
 
 async def save_upload_file(file, folder: str) -> str:
-    os.makedirs(folder, exist_ok=True)
-
-    # Get file extension
-    ext = os.path.splitext(file.filename)[1]  # e.g. ".jpg", ".pdf"
-
-    # Generate unique filename
-    unique_name = f"{uuid4().hex}{ext}"
-
-    # Full path inside uploads
-    file_path = os.path.join(folder, unique_name)
-
-    # Save file
-    with open(file_path, "wb") as buffer:
-        buffer.write(await file.read())
-
-    return file_path
-
-
-def delete_file_safe(path: str):
-    """Delete a file from disk if it exists"""
     try:
-        if os.path.exists(path):
-            os.remove(path)
-            return True
+        contents = await file.read()
+        filename = f"{folder}/{uuid4().hex}_{file.filename}"
+
+        supabase.storage.from_("files").upload(filename, contents)
+
+        # Get public URL
+        url_response = supabase.storage.from_("files").get_public_url(filename)
+        return url_response
     except Exception as e:
-        # log error if you want
-        print(f"Failed to delete {path}: {e}")
-    return False
+        print(f"Upload failed: {e}")
+        raise
+
+
+def extract_storage_path(url: str) -> str:
+    """
+    Convert a Supabase public URL to the storage path inside the bucket.
+    """
+    parsed = urlparse(url)
+    # URL path is like: /storage/v1/object/public/files/folder/abc.png
+    parts = parsed.path.split("/files/")  # split at bucket part
+    if len(parts) == 2:
+        return unquote(parts[1])  # decode URL-encoded parts
+    return None
+
+
+def delete_file_safe(path: str) -> bool:
+    """
+    Delete a file from Supabase storage safely.
+    `path` should be the full path inside your bucket, e.g., 'folder/file.png'.
+    """
+    try:
+        response = supabase.storage.from_("files").remove([extract_storage_path(path)])
+        # Supabase returns a list of errors if any
+        if response.get("error"):
+            print(f"Supabase deletion error: {response['error']}")
+            return False
+        return True
+    except Exception as e:
+        print(f"Failed to delete {path} from Supabase: {e}")
+        return False

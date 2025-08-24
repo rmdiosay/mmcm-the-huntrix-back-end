@@ -11,8 +11,8 @@ from src.entities.schemas import (
 )
 from src.entities.utils import generate_slug, delete_file_safe, save_upload_file
 
-UPLOAD_DIR_IMAGES = "uploads/images"
-UPLOAD_DIR_DOCS = "uploads/documents"
+UPLOAD_DIR_IMAGES = "buy-images"
+UPLOAD_DIR_DOCS = "buy-documents"
 
 
 # ---------------- CREATE ----------------
@@ -199,14 +199,7 @@ def _update_user_stats(user, sale_amount: float):
     user.sale += sale_amount
     user.transactions += 1
     user.property_sale = int(user.sale // 10000)
-    user.points = (
-        user.property_sale
-        + user.property_rental
-        + user.direct_referrals
-        + user.secondary_referrals
-        + user.tertiary_referrals
-        + user.positive_reviews
-    )
+    user.points += user.property_sale
 
 
 class SaleService:
