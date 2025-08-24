@@ -20,7 +20,7 @@ uploads
 .pytest_cache/
 
 # Environment variables
-# .env
+.env
 
 # Docker
 *.log
@@ -28,3 +28,7 @@ uploads
 # OS files
 .DS_Store
 Thumbs.db
+
+# Alembic
+alembic/
+alembic.ini
