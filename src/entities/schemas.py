@@ -31,7 +31,7 @@ class UserResponse(BaseModel):
     email: EmailStr
     first_name: str
     last_name: str
-    tier: str = "bronze"
+    tier: str = "Bronze"
     points: int = 0
     referrals_count: int = 0
     transactions: int = 0
@@ -46,7 +46,7 @@ class UserResponse(BaseModel):
     referred_by_id: Optional[str] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class PasswordChange(BaseModel):
@@ -89,6 +89,19 @@ class RentPropertySchema(RentPropertyBase):
     lister_id: str
     tenant_id: Optional[str] = None
     lease_term: Optional[int] = None
+    listed_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class RentPropertyWithTenant(RentPropertySchema):
+    status: str
+    created_at: datetime
+    type: str = "Rent"
+
+    class Config:
+        from_attributes = True
 
 
 class PendingRentalRequest(BaseModel):
@@ -124,6 +137,18 @@ class BuyPropertySchema(RentPropertyBase):
     document_list: List[str] = []
     documents: List[str]
 
+    class Config:
+        from_attributes = True
+
+
+class BuyPropertyWithBuyer(BuyPropertySchema):
+    status: str
+    created_at: datetime
+    type: str = "Buy"
+
+    class Config:
+        from_attributes = True
+
 
 class PendingSaleRequest(BaseModel):
     buy_id: str
@@ -152,7 +177,7 @@ class ReviewRead(ReviewBase):
     is_positive: bool
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class ReviewUpdate(BaseModel):

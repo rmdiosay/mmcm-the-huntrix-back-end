@@ -5,7 +5,7 @@ from datetime import datetime
 from fastapi import UploadFile
 from typing import List, Optional
 from src.entities.models import RentProperty, ListerTenant, User
-from src.entities.schemas import RentPropertyCreateSchema, RentPropertyUpdateSchema
+from src.entities.schemas import RentPropertyCreateSchema, RentPropertyUpdateSchema, RentPropertySchema
 from src.entities.utils import (
     generate_slug,
     delete_file_safe,
@@ -62,7 +62,7 @@ async def create_rent_property(
 
 # ---------------- READ ----------------
 def get_rent_properties(db: Session):
-    return db.query(RentProperty).all()
+    return db.query(RentProperty).filter(RentProperty.is_available).all()
 
 
 def get_user_rent_listings(db: Session, lister_id: str):
@@ -70,7 +70,25 @@ def get_user_rent_listings(db: Session, lister_id: str):
 
 
 def get_user_rent_rentals(db: Session, tenant_id: str):
-    return db.query(RentProperty).filter(RentProperty.tenant_id == tenant_id).all()
+    results = (
+        db.query(RentProperty, ListerTenant)
+        .join(ListerTenant, RentProperty.id == ListerTenant.rent_id)
+        .filter(ListerTenant.tenant_id == tenant_id)
+        .all()
+    )
+
+    rentals = []
+    for rent_property, lister_tenant in results:
+        rental_data = RentPropertySchema.from_orm(rent_property).dict()
+
+        rentals.append({
+            **rental_data,
+            "status": lister_tenant.status,
+            "created_at": lister_tenant.created_at,
+            "type": "Rent"
+        })
+
+    return rentals
 
 
 # ---------------- UPDATE ----------------
@@ -240,6 +258,10 @@ class RentalService:
                 # Update property
                 rent_property.is_available = False
                 rent_property.tenant_id = pending.tenant_id
+
+                # Update current ListerTenant status
+                pending.status = "Completed"
+                pending.created_at = datetime.utcnow()
 
                 # Delete other pending entries
                 self.db.query(ListerTenant).filter(

@@ -8,6 +8,7 @@ from src.entities.models import BuyProperty, ListerBuyer, User
 from src.entities.schemas import (
     BuyPropertyCreateSchema,
     BuyPropertyUpdateSchema,
+    BuyPropertySchema,
 )
 from src.entities.utils import (
     generate_slug,
@@ -78,7 +79,7 @@ async def create_buy_property(
 
 # ---------------- READ ----------------
 def get_buy_properties(db: Session):
-    return db.query(BuyProperty).all()
+    return db.query(BuyProperty).filter(BuyProperty.is_available).all()
 
 
 def get_user_buy_listings(db: Session, lister_id: str):
@@ -86,7 +87,27 @@ def get_user_buy_listings(db: Session, lister_id: str):
 
 
 def get_user_buy_purchases(db: Session, buyer_id: str):
-    return db.query(BuyProperty).filter(BuyProperty.buyer_id == buyer_id).all()
+    results = (
+        db.query(BuyProperty, ListerBuyer)
+        .join(ListerBuyer, BuyProperty.id == ListerBuyer.buy_id)
+        .filter(ListerBuyer.buyer_id == buyer_id)
+        .all()
+    )
+
+    purchases = []
+    for buy_property, lister_buyer in results:
+        rental_data = BuyPropertySchema.from_orm(buy_property).dict()
+
+        purchases.append(
+            {
+                **rental_data,
+                "status": lister_buyer.status,
+                "created_at": lister_buyer.created_at,
+                "type": "Buy",
+            }
+        )
+
+    return purchases
 
 
 # ---------------- UPDATE ----------------
@@ -290,6 +311,10 @@ class SaleService:
                 # Update the BuyProperty
                 buy_property.is_available = False
                 buy_property.buyer_id = pending.buyer_id
+
+                # Update current ListerBuyer status
+                pending.status = "Completed"
+                pending.created_at = datetime.utcnow()
 
                 # Delete other pending entries for the same property and lister
                 self.db.query(ListerBuyer).filter(

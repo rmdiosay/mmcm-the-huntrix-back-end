@@ -87,6 +87,7 @@ class RentProperty(Base):
     images = Column(JSON)
     latitude = Column(Float, nullable=True)
     longitude = Column(Float, nullable=True)
+    listed_at = Column(DateTime, default=datetime.utcnow)
 
     lister_id = Column(String(36), ForeignKey("users.id"), nullable=False)
     lister = relationship(
@@ -124,6 +125,7 @@ class BuyProperty(Base):
     images = Column(JSON, nullable=True)
     latitude = Column(Float, nullable=True)
     longitude = Column(Float, nullable=True)
+    listed_at = Column(DateTime, default=datetime.utcnow)
 
     lister_id = Column(String(36), ForeignKey("users.id"), nullable=False)
     lister = relationship(
@@ -144,6 +146,7 @@ class ListerTenant(Base):
     lister_id = Column(String(36), ForeignKey("users.id"), nullable=False)
     tenant_id = Column(String(36), ForeignKey("users.id"), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
+    status = Column(String, default="Pending")
 
 
 class ListerBuyer(Base):
@@ -154,6 +157,7 @@ class ListerBuyer(Base):
     lister_id = Column(String(36), ForeignKey("users.id"), nullable=False)
     buyer_id = Column(String(36), ForeignKey("users.id"), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
+    status = Column(String, default="Pending")
 
 
 class Review(Base):

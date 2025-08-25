@@ -3,10 +3,7 @@ from typing import List, Optional
 from sqlalchemy.orm import Session
 from src.database import get_db
 from src.services.auth_service import get_current_user
-from src.entities.schemas import (
-    TokenData,
-    RentPropertySchema,
-)
+from src.entities.schemas import TokenData, RentPropertySchema, RentPropertyWithTenant
 from ..services.rent_service import (
     create_rent_property,
     get_rent_properties,
@@ -69,7 +66,7 @@ def list_user_rent_listings(
     return get_user_rent_listings(db, token_data.get_uuid())
 
 
-@router.get("/rentals", response_model=List[RentPropertySchema])
+@router.get("/rentals", response_model=List[RentPropertyWithTenant])
 def list_user_rentals(
     db: Session = Depends(get_db), token_data: TokenData = Depends(get_current_user)
 ):

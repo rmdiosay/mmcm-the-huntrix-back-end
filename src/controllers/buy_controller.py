@@ -3,10 +3,7 @@ from typing import List, Optional
 from sqlalchemy.orm import Session
 from src.database import get_db
 from src.services.auth_service import get_current_user
-from src.entities.schemas import (
-    TokenData,
-    BuyPropertySchema,
-)
+from src.entities.schemas import TokenData, BuyPropertySchema, BuyPropertyWithBuyer
 from ..services.buy_service import (
     create_buy_property,
     get_buy_properties,
@@ -71,7 +68,7 @@ def list_user_property_listings(
     return get_user_buy_listings(db, token_data.get_uuid())
 
 
-@router.get("/purchases", response_model=List[BuyPropertySchema])
+@router.get("/purchases", response_model=List[BuyPropertyWithBuyer])
 def list_user_purchases(
     db: Session = Depends(get_db), token_data: TokenData = Depends(get_current_user)
 ):
