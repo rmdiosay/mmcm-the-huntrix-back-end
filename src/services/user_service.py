@@ -3,6 +3,7 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from src.entities.schemas import UserResponse, PasswordChange
 from src.entities.models import User
+from src.entities.utils import update_user_tier
 from src.exceptions import (
     UserNotFoundError,
     InvalidPasswordError,
@@ -53,9 +54,6 @@ def change_password(
 def verify_user(db: Session, user: User) -> User:
     if user.is_verified:
         raise HTTPException(status_code=400, detail="User is already verified")
-    
-    if user.transactions < 1:
-        raise HTTPException(status_code=400, detail="User must have at least one transaction to be verified")
 
     user.is_verified = True
     db.add(user)
@@ -72,17 +70,19 @@ def verify_user(db: Session, user: User) -> User:
         # Apply points based on level
         if level == 1:
             referrer.direct_referrals += 5
-            referrer.referrals_count += 1
             referrer.points += 5
+            referrer.referrals_count += 1
+            update_user_tier(referrer)
         elif level == 2:
             referrer.secondary_referrals += 2
-            referrer.referrals_count += 1
             referrer.points += 2
+            referrer.referrals_count += 1
+            update_user_tier(referrer)
         else:  # levels 3, 4, 5
             referrer.tertiary_referrals += 1
-            referrer.referrals_count += 1
             referrer.points += 1
-
+            referrer.referrals_count += 1
+            update_user_tier(referrer)
         db.add(referrer)
 
         # Move up the referral chain

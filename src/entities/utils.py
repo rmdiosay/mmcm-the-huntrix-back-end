@@ -116,3 +116,57 @@ def check_if_toxic(comment: str) -> bool:
     if not comment:
         return False
     return profanity.contains_profanity(comment)
+
+
+def update_user_tier(user):
+    """
+    Determine user tier based on points and referrals_count.
+    The lower tier is chosen if points and referrals fall into different tiers.
+    """
+
+    # define tier thresholds in ascending order
+    tiers = [
+        ("Bronze", 201, 10),
+        ("Silver", 501, 50),
+        ("Gold", 1001, 100),
+        ("Platinum", 2001, 200),
+        ("Diamond", float("inf"), float("inf")),  # no upper limit
+    ]
+    listings_tier_limits = {
+        "Bronze": 0,
+        "Silver": 1,
+        "Gold": 5,
+        "Platinum": 10,
+        "Diamond": float("inf"),
+    }
+    extra_tier_limits = {
+        "Bronze": 0,
+        "Silver": 0.05,
+        "Gold": 0.1,
+        "Platinum": 0.15,
+        "Diamond": 0.2,
+    }
+    # find tier by points
+    points_tier = None
+    for name, max_points, _ in tiers:
+        if user.points < max_points:
+            points_tier = name
+            break
+    if user.points >= 2001:  # special case for Diamond
+        points_tier = "Diamond"
+
+    # find tier by referrals
+    referrals_tier = None
+    for name, _, max_referrals in tiers:
+        if user.referrals_count <= max_referrals:
+            referrals_tier = name
+            break
+    if user.referrals_count > 200:  # special case for Diamond
+        referrals_tier = "Diamond"
+
+    # final tier = lowest of the two
+    tier_order = {name: i for i, (name, _, _) in enumerate(tiers)}
+
+    user.tier = min(points_tier, referrals_tier, key=lambda t: tier_order[t])
+    user.max_listings = listings_tier_limits.get(user.tier, 0)
+    user.extra_points = extra_tier_limits.get(user.tier, 0)

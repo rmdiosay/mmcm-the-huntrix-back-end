@@ -7,7 +7,7 @@ from jwt import PyJWTError
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from src.entities.models import User
-from src.entities.schemas import TokenData, RegisterUserRequest, Token, UserResponse
+from src.entities.schemas import TokenData, RegisterUserRequest, UserResponse
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from ..exceptions import AuthenticationError
 import logging
@@ -17,6 +17,7 @@ import random
 SECRET_KEY = "197b2c37c391bed93fe80344fe73b806947a65e36206e05a1a23c2fa12702fe3"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
+REFRESH_TOKEN_EXPIRE_DAYS = 7
 
 oauth2_bearer = OAuth2PasswordBearer(tokenUrl="auth/token")
 bcrypt_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -54,6 +55,33 @@ def verify_token(token: str) -> TokenData:
         return TokenData(user_id=user_id)
     except PyJWTError as e:
         logging.warning(f"Token verification failed: {str(e)}")
+        raise AuthenticationError()
+
+
+def create_refresh_token(
+    email: str, user_id: str, expires_delta: timedelta | None = None
+) -> str:
+    expire = datetime.now(timezone.utc) + (
+        expires_delta or timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+    )
+    encode = {
+        "sub": email,
+        "id": str(user_id),
+        "exp": expire,
+        "type": "refresh",  # mark as refresh token
+    }
+    return jwt.encode(encode, SECRET_KEY, algorithm=ALGORITHM)
+
+
+def verify_refresh_token(token: str) -> TokenData:
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        if payload.get("type") != "refresh":
+            raise AuthenticationError()
+        user_id: str = payload.get("id")
+        return TokenData(user_id=user_id)
+    except PyJWTError as e:
+        logging.warning(f"Refresh token verification failed: {str(e)}")
         raise AuthenticationError()
 
 
@@ -120,11 +148,18 @@ CurrentUser = Annotated[TokenData, Depends(get_current_user)]
 
 def login(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()], db: Session
-) -> Token:
+) -> dict:
     user = authenticate_user(form_data.username, form_data.password, db)
     if not user:
         raise AuthenticationError()
-    token = create_access_token(
+
+    access_token = create_access_token(
         user.email, user.id, timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     )
-    return Token(access_token=token, token_type="bearer")
+    refresh_token = create_refresh_token(user.email, user.id)
+
+    return {
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "token_type": "bearer",
+    }

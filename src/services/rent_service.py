@@ -6,7 +6,12 @@ from fastapi import UploadFile
 from typing import List, Optional
 from src.entities.models import RentProperty, ListerTenant, User
 from src.entities.schemas import RentPropertyCreateSchema, RentPropertyUpdateSchema
-from src.entities.utils import generate_slug, delete_file_safe, save_upload_file
+from src.entities.utils import (
+    generate_slug,
+    delete_file_safe,
+    save_upload_file,
+    update_user_tier,
+)
 
 
 # ---------------- CREATE ----------------
@@ -21,6 +26,7 @@ async def create_rent_property(
     size: str,
     description: str,
     amenities: List[str],
+    tags: List[str],
     images: List[UploadFile],
     lease_term: Optional[int] = None,
     latitude: Optional[float] = None,
@@ -40,6 +46,7 @@ async def create_rent_property(
         size=size,
         description=description,
         amenities=amenities,
+        tags=tags,
         images=image_paths,
         lease_term=lease_term,
         latitude=latitude,
@@ -78,6 +85,7 @@ async def update_rent_property(
     size: str,
     description: str,
     amenities: List[str],
+    tags: List[str],
     images: List[UploadFile],
     remove_images: List[str],
     lease_term: Optional[int] = None,
@@ -111,6 +119,7 @@ async def update_rent_property(
         size=size,
         description=description,
         amenities=amenities,
+        tags=tags,
         images=updated_images,
         remove_images=remove_images,
         lease_term=lease_term,
@@ -151,8 +160,11 @@ def _update_user_stats(user, amount: float):
     """
     user.rental += amount
     user.transactions += 1
-    user.property_rental = user.rental / 10000
-    user.points += user.property_rental
+    property_points = amount / 10000
+    additional = property_points + (property_points * user.extra_points)
+    user.property_rental += additional
+    user.points += additional
+    update_user_tier(user)
 
 
 class RentalService:

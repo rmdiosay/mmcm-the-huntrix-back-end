@@ -1,5 +1,6 @@
+from datetime import timedelta
 from typing import Annotated
-from fastapi import APIRouter, Depends, HTTPException, Request, Form
+from fastapi import APIRouter, Depends, HTTPException, Request, Form, Body
 from pydantic import ValidationError
 from starlette import status
 from src.entities.schemas import RegisterUserRequest, Token, UserResponse
@@ -9,6 +10,9 @@ from ..database import DbSession
 from ..services.auth_service import (
     register,
     login,
+    verify_refresh_token,
+    create_access_token,
+    ACCESS_TOKEN_EXPIRE_MINUTES,
 )
 
 router = APIRouter(tags=["Authorization"])
@@ -46,3 +50,16 @@ async def login_for_access_token(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()], db: DbSession
 ):
     return login(form_data, db)
+
+
+@router.post("/auth/refresh", response_model=Token)
+async def refresh_access_token(
+    refresh_token: str = Body(..., embed=True),
+):
+    token_data = verify_refresh_token(refresh_token)
+    new_access_token = create_access_token(
+        email="",
+        user_id=token_data.user_id,
+        expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
+    )
+    return {"access_token": new_access_token, "token_type": "bearer"}

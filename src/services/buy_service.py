@@ -9,7 +9,12 @@ from src.entities.schemas import (
     BuyPropertyCreateSchema,
     BuyPropertyUpdateSchema,
 )
-from src.entities.utils import generate_slug, delete_file_safe, save_upload_file
+from src.entities.utils import (
+    generate_slug,
+    delete_file_safe,
+    save_upload_file,
+    update_user_tier,
+)
 
 UPLOAD_DIR_IMAGES = "buy-images"
 UPLOAD_DIR_DOCS = "buy-documents"
@@ -27,6 +32,7 @@ async def create_buy_property(
     size: str,
     description: str,
     amenities: List[str],
+    tags: List[str],
     document_list: List[str],
     images: Optional[List[UploadFile]] = None,
     documents: Optional[List[UploadFile]] = None,
@@ -55,6 +61,7 @@ async def create_buy_property(
         size=size,
         description=description,
         amenities=amenities,
+        tags=tags,
         document_list=document_list,
         images=image_paths,
         documents=document_paths,
@@ -94,6 +101,7 @@ async def update_buy_property(
     size: str,
     description: str,
     amenities: List[str],
+    tags: List[str],
     document_list: List[str],
     images: Optional[List[UploadFile]] = None,
     documents: Optional[List[UploadFile]] = None,
@@ -147,6 +155,7 @@ async def update_buy_property(
         size=size,
         description=description,
         amenities=amenities,
+        tags=tags,
         document_list=document_list,
         images=updated_images,
         documents=updated_documents,
@@ -198,8 +207,11 @@ def _update_user_stats(user, sale_amount: float):
     """
     user.sale += sale_amount
     user.transactions += 1
-    user.property_sale = user.sale / 10000
-    user.points += user.property_sale
+    property_points = sale_amount / 10000
+    additional = property_points + (property_points * user.extra_points)
+    user.property_sale += additional
+    user.points += additional
+    update_user_tier(user)
 
 
 class SaleService:

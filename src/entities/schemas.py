@@ -14,6 +14,7 @@ class RegisterUserRequest(BaseModel):
 class Token(BaseModel):
     access_token: str
     token_type: str
+    refresh_token: str | None = None
 
 
 class TokenData(BaseModel):
@@ -34,12 +35,12 @@ class UserResponse(BaseModel):
     points: int = 0
     referrals_count: int = 0
     transactions: int = 0
-    property_sale: Optional[int] = 0
-    property_rental: Optional[int] = 0
-    direct_referrals: Optional[int] = 0
-    secondary_referrals: Optional[int] = 0
-    tertiary_referrals: Optional[int] = 0
-    positive_reviews: Optional[int] = 0
+    property_sale: Optional[float] = 0
+    property_rental: Optional[float] = 0
+    direct_referrals: Optional[float] = 0
+    secondary_referrals: Optional[float] = 0
+    tertiary_referrals: Optional[float] = 0
+    positive_reviews: Optional[float] = 0
     referral_code: int
     is_verified: bool = False
     referred_by_id: Optional[str] = None
@@ -65,6 +66,7 @@ class RentPropertyBase(BaseModel):
     is_available: bool = True
     description: Optional[str] = ""
     amenities: List[str] = []
+    tags: List[str] = []
     images: List[str] = []
     latitude: Optional[float] = None
     longitude: Optional[float] = None
