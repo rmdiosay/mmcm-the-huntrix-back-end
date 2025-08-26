@@ -80,6 +80,7 @@ class RentProperty(Base):
     size = Column(String, nullable=False)
     is_popular = Column(Boolean, default=False)
     is_available = Column(Boolean, default=True)
+    freq = Column(String, default="monthly")
     lease_term = Column(Integer, nullable=False)
     description = Column(String, nullable=True)
     aidesc = Column(JSON, nullable=True)
