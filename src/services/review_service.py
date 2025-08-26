@@ -1,6 +1,11 @@
 from sqlalchemy.orm import Session
-from src.entities.models import Review
-from src.entities.utils import check_positive_review, check_if_toxic, has_been_tenant
+from src.entities.models import Review, User
+from src.entities.utils import (
+    check_positive_review,
+    check_if_toxic,
+    has_been_tenant,
+    update_user_tier,
+)
 from fastapi import HTTPException, status
 
 
@@ -49,6 +54,12 @@ class ReviewService:
             rating=review_data.get("rating"), comment=comment
         )
 
+        user = self.db.query(User).filter(User.id == user_id).first()
+        if review_data["is_positive"]:
+            user.positive_reviews += 1
+            user.points += 1
+            update_user_tier(user)
+
         review = Review(**review_data)
         self.db.add(review)
         self.db.commit()
@@ -66,12 +77,6 @@ class ReviewService:
 
         for key, value in update_data.items():
             setattr(review, key, value)
-
-        # Recalculate positivity if rating or comment changed
-        if "rating" in update_data or "comment" in update_data:
-            review.is_positive = check_positive_review(
-                rating=review.rating, comment=review.comment
-            )
 
         self.db.commit()
         self.db.refresh(review)
