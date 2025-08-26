@@ -175,6 +175,7 @@ class ListerTenant(Base):
     tenant_id = Column(String(36), ForeignKey("users.id"), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     status = Column(String, default="Pending")
+    message = Column(Text, nullable=True)
 
 
 class ListerBuyer(Base):
@@ -186,6 +187,7 @@ class ListerBuyer(Base):
     buyer_id = Column(String(36), ForeignKey("users.id"), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     status = Column(String, default="Pending")
+    message = Column(Text, nullable=True)
 
 
 class Review(Base):

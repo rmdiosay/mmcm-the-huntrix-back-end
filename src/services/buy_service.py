@@ -213,7 +213,9 @@ class SaleService:
     def __init__(self, db: Session):
         self.db = db
 
-    def create_pending_sale(self, buy_id: str, lister_id: str, buyer_id: str):
+    def create_pending_sale(
+        self, buy_id: str, lister_id: str, buyer_id: str, message: str = None
+    ):
         """Create a ListerBuyer record when a user shows interest in buying a property."""
         try:
             with self.db.begin():
@@ -246,6 +248,7 @@ class SaleService:
                     buy_id=buy_id,
                     lister_id=lister_id,
                     buyer_id=buyer_id,
+                    message=message,
                     created_at=datetime.utcnow(),
                 )
 
@@ -255,7 +258,19 @@ class SaleService:
         except SQLAlchemyError as e:
             self.db.rollback()
             raise e
-
+        
+    def get_pending_sales_by_property(self, buy_id: str):
+        """Return all ListerTenant records for a given property."""
+        try:
+            return (
+                self.db.query(ListerBuyer)
+                .filter(ListerBuyer.buy_id == buy_id)
+                .all()
+            )
+        except SQLAlchemyError as e:
+            self.db.rollback()
+            raise e
+        
     def confirm_sale(self, lister_buyer_id: str):
         """Confirm a sale, finalize the buyer, remove other pending records, and update lister and buyer stats."""
         try:

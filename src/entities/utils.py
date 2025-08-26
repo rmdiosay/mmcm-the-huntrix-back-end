@@ -180,7 +180,9 @@ def update_user_tier(user):
     user.extra_points = extra_tier_limits.get(user.tier, 0)
 
 
-processor = BlipProcessor.from_pretrained("Salesforce/blip-image-captioning-base")
+processor = BlipProcessor.from_pretrained(
+    "Salesforce/blip-image-captioning-base", use_fast=True
+)
 model = BlipForConditionalGeneration.from_pretrained(
     "Salesforce/blip-image-captioning-base"
 )

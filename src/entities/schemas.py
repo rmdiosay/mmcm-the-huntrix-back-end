@@ -204,3 +204,22 @@ class PropertyResult(BaseModel):
 
 class ScrapeResponse(BaseModel):
     results: List[PropertyResult]
+
+
+class MessageBase(BaseModel):
+    sender_id: str
+    receiver_id: str
+    content: str
+
+
+class MessageCreate(MessageBase):
+    pass
+
+
+class MessageResponse(MessageBase):
+    id: str
+    is_read: bool
+    created_at: datetime
+
+    class Config:
+        from_attributes = True

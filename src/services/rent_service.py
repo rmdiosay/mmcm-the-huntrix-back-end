@@ -45,12 +45,11 @@ async def create_rent_property(
         aidesc = [generate_image_description(image) for image in image_paths]
     else:
         image_paths = []
-        aidesc=[]
+        aidesc = []
     if videos:
         video_paths = [await save_upload_file(vid, "rent-videos") for vid in videos]
     else:
         video_paths = []
-    
 
     rent_data = RentPropertyCreateSchema(
         slug=slug,
@@ -209,7 +208,9 @@ class RentalService:
     def __init__(self, db: Session):
         self.db = db
 
-    def create_pending_rental(self, rent_id: str, lister_id: str, tenant_id: str):
+    def create_pending_rental(
+        self, rent_id: str, lister_id: str, tenant_id: str, message: str = None
+    ):
         """Create a ListerTenant record when a user shows interest."""
         try:
             with self.db.begin():
@@ -239,11 +240,24 @@ class RentalService:
                     rent_id=rent_id,
                     lister_id=lister_id,
                     tenant_id=tenant_id,
+                    message=message,  # <-- save message
                     created_at=datetime.utcnow(),
                 )
                 self.db.add(new_pending)
                 return new_pending
 
+        except SQLAlchemyError as e:
+            self.db.rollback()
+            raise e
+
+    def get_pending_rentals_by_property(self, rent_id: str):
+        """Return all ListerTenant records for a given property."""
+        try:
+            return (
+                self.db.query(ListerTenant)
+                .filter(ListerTenant.rent_id == rent_id)
+                .all()
+            )
         except SQLAlchemyError as e:
             self.db.rollback()
             raise e
@@ -317,3 +331,20 @@ class RentalService:
         except SQLAlchemyError as e:
             self.db.rollback()
             raise e
+
+    def premium_listing(self, rent_id: str):
+        rent_property = (
+            self.db.query(RentProperty).filter(RentProperty.id == rent_id).first()
+        )
+        user = self.db.query(User).filter(User.id == rent_property.lister_id).first()
+
+        if user.max_listings > user.used_listings:
+            rent_property.is_popular = True
+            user.used_listings += 1
+        elif user.premium_listings > 0:
+            rent_property.is_popular = True
+            user.premium_listings -= 1
+        else:
+            raise Exception("No premium listing vouchers to use.")
+
+        return rent_property

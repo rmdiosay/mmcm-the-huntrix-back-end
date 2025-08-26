@@ -130,6 +130,7 @@ def create_pending_rental(
     rent_id: str = Form(...),
     lister_id: str = Form(...),
     tenant_id: str = Form(...),
+    message: str = Form(None),
     db: Session = Depends(get_db),
 ):
     service = RentalService(db)
@@ -138,8 +139,33 @@ def create_pending_rental(
             rent_id=rent_id,
             lister_id=lister_id,
             tenant_id=tenant_id,
+            message=message,
         )
         return {"success": True, "pending_id": str(pending.id)}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.get("/pending/{rent_id}", response_model=list[dict])
+def get_pending_rentals(
+    rent_id: str,
+    db: Session = Depends(get_db),
+):
+    service = RentalService(db)
+    try:
+        pendings = service.get_pending_rentals_by_property(rent_id=rent_id)
+        return [
+            {
+                "id": str(p.id),
+                "rent_id": p.rent_id,
+                "lister_id": p.lister_id,
+                "tenant_id": p.tenant_id,
+                "status": p.status,
+                "message": p.message,
+                "created_at": p.created_at.isoformat(),
+            }
+            for p in pendings
+        ]
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -157,6 +183,23 @@ def confirm_rental(
             "rent_property_id": str(rent_property.id),
             "tenant_id": str(rent_property.tenant_id),
             "is_available": rent_property.is_available,
+        }
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post("/premium-listing", response_model=dict)
+def apply_premium_listing(
+    rent_id: str = Form(...),
+    db: Session = Depends(get_db),
+):
+    service = RentalService(db)
+    try:
+        rent_property = service.premium_listing(rent_id=rent_id)
+        return {
+            "success": True,
+            "rent_id": str(rent_id),
+            "is_available": rent_property.is_popular,
         }
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))

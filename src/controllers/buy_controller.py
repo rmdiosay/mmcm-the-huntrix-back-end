@@ -130,16 +130,39 @@ def create_pending_sale(
     buy_id: str = Form(...),
     lister_id: str = Form(...),
     buyer_id: str = Form(...),
+    message: str = Form(None),
     db: Session = Depends(get_db),
 ):
     service = SaleService(db)
     try:
         pending = service.create_pending_sale(
-            buy_id=buy_id,
-            lister_id=lister_id,
-            buyer_id=buyer_id,
+            buy_id=buy_id, lister_id=lister_id, buyer_id=buyer_id, message=message
         )
         return {"success": True, "pending_id": str(pending.id)}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.get("/pending/{buy_id}", response_model=list[dict])
+def get_pending_rentals(
+    buy_id: str,
+    db: Session = Depends(get_db),
+):
+    service = SaleService(db)
+    try:
+        pendings = service.get_pending_sales_by_property(buy_id=buy_id)
+        return [
+            {
+                "id": str(p.id),
+                "buy_id": p.buy_id,
+                "lister_id": p.lister_id,
+                "buyer_id": p.buyer_id,
+                "status": p.status,
+                "message": p.message,
+                "created_at": p.created_at.isoformat(),
+            }
+            for p in pendings
+        ]
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
