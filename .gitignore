@@ -28,7 +28,3 @@ uploads
 # OS files
 .DS_Store
 Thumbs.db
-
-# Alembic
-alembic/
-alembic.ini
