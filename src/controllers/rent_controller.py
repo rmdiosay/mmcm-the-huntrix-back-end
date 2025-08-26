@@ -34,7 +34,7 @@ async def create_rent(
     lease_term: Optional[int] = Form(None),
     latitude: Optional[float] = Form(None),
     longitude: Optional[float] = Form(None),
-    property_score: float = Form(...),
+    property_score: Optional[float] = Form(None),
     db: Session = Depends(get_db),
     token_data: TokenData = Depends(get_current_user),
 ):

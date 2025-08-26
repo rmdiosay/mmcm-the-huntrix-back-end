@@ -28,7 +28,7 @@ async def create_buy(
     description: str = Form(""),
     amenities: List[str] = Form([]),
     tags: List[str] = Form([]),
-    property_score: float = Form(...),
+    property_score: Optional[float] = Form(None),
     document_list: List[str] = Form([]),
     images: Optional[List[UploadFile]] = File(None),
     videos: Optional[List[UploadFile]] = File(None),

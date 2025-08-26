@@ -33,7 +33,7 @@ async def create_rent_property(
     description: str,
     amenities: List[str],
     tags: List[str],
-    property_score: float,
+    property_score: Optional[float] = None,
     images: Optional[List[UploadFile]] = None,
     videos: Optional[List[UploadFile]] = None,
     lease_term: Optional[int] = None,

@@ -36,7 +36,7 @@ async def create_buy_property(
     amenities: List[str],
     tags: List[str],
     document_list: List[str],
-    property_score: float,
+    property_score: Optional[float] = None,
     images: Optional[List[UploadFile]] = None,
     videos: Optional[List[UploadFile]] = None,
     latitude: Optional[float] = None,
