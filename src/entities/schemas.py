@@ -92,6 +92,7 @@ class RentPropertySchema(RentPropertyBase):
     slug: str
     lister_id: str
     tenant_id: Optional[str] = None
+    freq: str
     lease_term: Optional[int] = None
     listed_at: datetime
     lister_name: Optional[str]
