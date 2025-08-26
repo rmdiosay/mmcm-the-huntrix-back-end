@@ -117,15 +117,11 @@ class ConfirmRentalRequest(BaseModel):
 class BuyPropertyCreateSchema(RentPropertyBase):
     slug: Optional[str] = None
     document_list: List[str] = []
-    documents: List[str] = []
-
 
 class BuyPropertyUpdateSchema(RentPropertyBase):
     slug: Optional[str] = None
     document_list: List[str] = []
-    documents: List[str] = []
     remove_images: List[str] = []
-    remove_documents: List[str] = []
 
 
 class BuyPropertySchema(RentPropertyBase):
@@ -135,7 +131,6 @@ class BuyPropertySchema(RentPropertyBase):
     buyer_id: Optional[str] = None
     lease_term: Optional[int] = None
     document_list: List[str] = []
-    documents: List[str]
 
     class Config:
         from_attributes = True
@@ -183,3 +178,22 @@ class ReviewRead(ReviewBase):
 class ReviewUpdate(BaseModel):
     rating: Optional[int] = Field(None, ge=1, le=5)
     comment: Optional[str] = None
+
+
+class ScrapeRequest(BaseModel):
+    query: Optional[str] = None
+    location: Optional[str] = None
+    min_price: Optional[float] = None
+    max_price: Optional[float] = None
+    type: Optional[str] = "rent"  # rent or buy
+
+
+class PropertyResult(BaseModel):
+    title: str
+    price: str
+    location: str
+    url: str
+
+
+class ScrapeResponse(BaseModel):
+    results: List[PropertyResult]

@@ -18,7 +18,6 @@ from src.entities.utils import (
 )
 
 UPLOAD_DIR_IMAGES = "buy-images"
-UPLOAD_DIR_DOCS = "buy-documents"
 
 
 # ---------------- CREATE ----------------
@@ -35,22 +34,12 @@ async def create_buy_property(
     amenities: List[str],
     tags: List[str],
     document_list: List[str],
-    images: Optional[List[UploadFile]] = None,
-    documents: Optional[List[UploadFile]] = None,
+    images: Optional[List[UploadFile]],
     latitude: Optional[float] = None,
     longitude: Optional[float] = None,
 ):
     slug = generate_slug(name, db, BuyProperty)
-
-    image_paths = []
-    for image in images:
-        path = await save_upload_file(image, UPLOAD_DIR_IMAGES)
-        image_paths.append(path)
-
-    document_paths = []
-    for doc in documents:
-        path = await save_upload_file(doc, UPLOAD_DIR_DOCS)
-        document_paths.append(path)
+    image_paths = [await save_upload_file(img, UPLOAD_DIR_IMAGES) for img in images]
 
     buy = BuyPropertyCreateSchema(
         slug=slug,
@@ -65,7 +54,6 @@ async def create_buy_property(
         tags=tags,
         document_list=document_list,
         images=image_paths,
-        documents=document_paths,
         latitude=latitude,
         longitude=longitude,
     )
@@ -125,9 +113,7 @@ async def update_buy_property(
     tags: List[str],
     document_list: List[str],
     images: Optional[List[UploadFile]] = None,
-    documents: Optional[List[UploadFile]] = None,
     remove_images: Optional[List[str]] = None,
-    remove_documents: Optional[List[str]] = None,
     latitude: Optional[float] = None,
     longitude: Optional[float] = None,
 ):
@@ -136,33 +122,15 @@ async def update_buy_property(
         return None
 
     # Save new images
-    new_image_paths = []
-    for image in images:
-        path = await save_upload_file(image, UPLOAD_DIR_IMAGES)
-        new_image_paths.append(path)
-
-    # Save new documents
-    new_doc_paths = []
-    for doc in documents:
-        path = await save_upload_file(doc, UPLOAD_DIR_DOCS)
-        new_doc_paths.append(path)
+    new_image_paths = [await save_upload_file(img, UPLOAD_DIR_IMAGES) for img in images]
 
     # Delete removed images
     for img_path in remove_images:
         delete_file_safe(img_path)
 
-    # Delete removed documents
-    for doc_path in remove_documents:
-        delete_file_safe(doc_path)
-
     # Keep others + add new ones
     updated_images = [img for img in db_property.images if img not in remove_images]
     updated_images.extend(new_image_paths)
-
-    updated_documents = [
-        doc for doc in db_property.documents if doc not in remove_documents
-    ]
-    updated_documents.extend(new_doc_paths)
 
     new_slug = generate_slug(name, db, BuyProperty)
 
@@ -179,16 +147,12 @@ async def update_buy_property(
         tags=tags,
         document_list=document_list,
         images=updated_images,
-        documents=updated_documents,
         remove_images=remove_images,
-        remove_documents=remove_documents,
         latitude=latitude,
         longitude=longitude,
     )
 
-    for key, value in update_data.model_dump(
-        exclude={"remove_images", "remove_documents"}
-    ).items():
+    for key, value in update_data.model_dump(exclude={"remove_images"}).items():
         setattr(db_property, key, value)
 
     db.commit()
@@ -205,10 +169,6 @@ def delete_buy_property(db: Session, slug: str):
     # Delete all images
     for img_path in db_property.images or []:
         delete_file_safe(img_path)
-
-    # Delete all documents
-    for doc_path in db_property.documents or []:
-        delete_file_safe(doc_path)
 
     db.delete(db_property)
     db.commit()

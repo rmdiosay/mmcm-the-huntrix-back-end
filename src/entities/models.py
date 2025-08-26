@@ -121,7 +121,6 @@ class BuyProperty(Base):
     amenities = Column(JSON, nullable=True)
     tags = Column(JSON)
     document_list = Column(JSON, nullable=True)
-    documents = Column(JSON, nullable=True)
     images = Column(JSON, nullable=True)
     latitude = Column(Float, nullable=True)
     longitude = Column(Float, nullable=True)
