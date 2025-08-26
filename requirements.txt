@@ -14,3 +14,6 @@ slugify
 supabase
 textblob
 better-profanity
+bs4
+selenium
+webdriver-manager

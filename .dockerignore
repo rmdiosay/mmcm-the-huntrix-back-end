@@ -1,0 +1,36 @@
+# flyctl launch added from .gitignore
+# Python
+**\__pycache__
+**\*.pyc
+**\*.pyo
+
+# Virtual environments
+**\.venv
+**\venv
+**\env
+**\.v
+**\.vscode
+
+# Test database
+**\test.db
+
+# Uploads
+**\uploads
+
+# Pytest cache
+**\.pytest_cache
+
+# Environment variables
+**\.env
+
+# Docker
+**\*.log
+
+# OS files
+**\.DS_Store
+**\Thumbs.db
+
+# Alembic
+**\alembic
+**\alembic.ini
+fly.toml
