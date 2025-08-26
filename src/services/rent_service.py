@@ -15,7 +15,7 @@ from src.entities.utils import (
     delete_file_safe,
     save_upload_file,
     update_user_tier,
-    generate_image_description,
+    # generate_image_description,
 )
 
 
