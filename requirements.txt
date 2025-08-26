@@ -17,3 +17,8 @@ better-profanity
 bs4
 selenium
 webdriver-manager
+torch
+torchvision
+transformers
+pillow
+requests

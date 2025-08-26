@@ -48,6 +48,7 @@ class User(Base):
     used_listings = Column(Float, default=0)
     extra_points = Column(Float, default=0)
     favorites = Column(JSON, nullable=True)
+    property_score = Column(Float, default=0)
 
     referrals = relationship("User", backref="referred_by", remote_side=[id])
     rent_properties = relationship(
@@ -81,10 +82,12 @@ class RentProperty(Base):
     is_popular = Column(Boolean, default=False)
     is_available = Column(Boolean, default=True)
     lease_term = Column(Integer, nullable=False)
-    description = Column(String)
-    amenities = Column(JSON)
-    tags = Column(JSON)
-    images = Column(JSON)
+    description = Column(String, nullable=True)
+    aidesc = Column(JSON, nullable=True)
+    amenities = Column(JSON, nullable=True)
+    tags = Column(JSON, nullable=True)
+    images = Column(JSON, nullable=True)
+    videos = Column(JSON, nullable=True)
     latitude = Column(Float, nullable=True)
     longitude = Column(Float, nullable=True)
     listed_at = Column(DateTime, default=datetime.utcnow)
@@ -103,6 +106,18 @@ class RentProperty(Base):
         "Review", back_populates="rent_property", cascade="all, delete-orphan"
     )
 
+    @property
+    def lister_name(self):
+        if self.lister:
+            return f"{self.lister.first_name} {self.lister.last_name}"
+        return None
+
+    @property
+    def tenant_name(self):
+        if self.tenant:
+            return f"{self.tenant.first_name} {self.tenant.last_name}"
+        return None
+
 
 class BuyProperty(Base):
     __tablename__ = "buy_properties"
@@ -117,11 +132,13 @@ class BuyProperty(Base):
     size = Column(String, nullable=False)
     is_popular = Column(Boolean, default=False)
     is_available = Column(Boolean, default=True)
-    description = Column(String)
+    description = Column(String, nullable=True)
+    aidesc = Column(JSON, nullable=True)
     amenities = Column(JSON, nullable=True)
-    tags = Column(JSON)
+    tags = Column(JSON, nullable=True)
     document_list = Column(JSON, nullable=True)
     images = Column(JSON, nullable=True)
+    videos = Column(JSON, nullable=True)
     latitude = Column(Float, nullable=True)
     longitude = Column(Float, nullable=True)
     listed_at = Column(DateTime, default=datetime.utcnow)
@@ -135,6 +152,18 @@ class BuyProperty(Base):
     buyer = relationship(
         "User", back_populates="bought_properties", foreign_keys=[buyer_id]
     )
+
+    @property
+    def lister_name(self):
+        if self.lister:
+            return f"{self.lister.first_name} {self.lister.last_name}"
+        return None
+
+    @property
+    def buyer_name(self):
+        if self.buyer:
+            return f"{self.buyer.first_name} {self.buyer.last_name}"
+        return None
 
 
 class ListerTenant(Base):

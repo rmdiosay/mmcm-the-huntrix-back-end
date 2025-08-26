@@ -30,6 +30,7 @@ async def create_buy(
     tags: List[str] = Form([]),
     document_list: List[str] = Form([]),
     images: Optional[List[UploadFile]] = File(None),
+    videos: Optional[List[UploadFile]] = File(None),
     latitude: Optional[float] = Form(None),
     longitude: Optional[float] = Form(None),
     db: Session = Depends(get_db),
@@ -49,6 +50,7 @@ async def create_buy(
         tags=tags,
         document_list=document_list,
         images=images,
+        videos=videos,
         latitude=latitude,
         longitude=longitude,
     )

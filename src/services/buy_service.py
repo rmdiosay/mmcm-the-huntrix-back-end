@@ -15,9 +15,11 @@ from src.entities.utils import (
     delete_file_safe,
     save_upload_file,
     update_user_tier,
+    generate_image_description,
 )
 
 UPLOAD_DIR_IMAGES = "buy-images"
+UPLOAD_DIR_VIDEOS = "buy-videos"
 
 
 # ---------------- CREATE ----------------
@@ -34,12 +36,22 @@ async def create_buy_property(
     amenities: List[str],
     tags: List[str],
     document_list: List[str],
-    images: Optional[List[UploadFile]],
+    images: Optional[List[UploadFile]] = None,
+    videos: Optional[List[UploadFile]] = None,
     latitude: Optional[float] = None,
     longitude: Optional[float] = None,
 ):
     slug = generate_slug(name, db, BuyProperty)
-    image_paths = [await save_upload_file(img, UPLOAD_DIR_IMAGES) for img in images]
+    if images:
+        image_paths = [await save_upload_file(img, UPLOAD_DIR_IMAGES) for img in images]
+        aidesc = [generate_image_description(image) for image in image_paths]
+    else:
+        image_paths = []
+        aidesc = []
+    if videos:
+        video_paths = [await save_upload_file(vid, UPLOAD_DIR_VIDEOS) for vid in videos]
+    else:
+        video_paths = []
 
     buy = BuyPropertyCreateSchema(
         slug=slug,
@@ -50,10 +62,12 @@ async def create_buy_property(
         bath=bath,
         size=size,
         description=description,
+        aidesc=aidesc,
         amenities=amenities,
         tags=tags,
         document_list=document_list,
         images=image_paths,
+        videos=video_paths,
         latitude=latitude,
         longitude=longitude,
     )

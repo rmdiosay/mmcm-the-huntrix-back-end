@@ -5,12 +5,17 @@ from datetime import datetime
 from fastapi import UploadFile
 from typing import List, Optional
 from src.entities.models import RentProperty, ListerTenant, User
-from src.entities.schemas import RentPropertyCreateSchema, RentPropertyUpdateSchema, RentPropertySchema
+from src.entities.schemas import (
+    RentPropertyCreateSchema,
+    RentPropertyUpdateSchema,
+    RentPropertySchema,
+)
 from src.entities.utils import (
     generate_slug,
     delete_file_safe,
     save_upload_file,
     update_user_tier,
+    generate_image_description,
 )
 
 
@@ -27,14 +32,25 @@ async def create_rent_property(
     description: str,
     amenities: List[str],
     tags: List[str],
-    images: List[UploadFile],
+    images: Optional[List[UploadFile]] = None,
+    videos: Optional[List[UploadFile]] = None,
     lease_term: Optional[int] = None,
     latitude: Optional[float] = None,
     longitude: Optional[float] = None,
 ):
+    print("Hi")
     slug = generate_slug(name, db, RentProperty)
-
-    image_paths = [await save_upload_file(img, "rent-images") for img in images]
+    if images:
+        image_paths = [await save_upload_file(img, "rent-images") for img in images]
+        aidesc = [generate_image_description(image) for image in image_paths]
+    else:
+        image_paths = []
+        aidesc=[]
+    if videos:
+        video_paths = [await save_upload_file(vid, "rent-videos") for vid in videos]
+    else:
+        video_paths = []
+    
 
     rent_data = RentPropertyCreateSchema(
         slug=slug,
@@ -45,9 +61,11 @@ async def create_rent_property(
         bath=bath,
         size=size,
         description=description,
+        aidesc=aidesc,
         amenities=amenities,
         tags=tags,
         images=image_paths,
+        videos=video_paths,
         lease_term=lease_term,
         latitude=latitude,
         longitude=longitude,
@@ -81,12 +99,14 @@ def get_user_rent_rentals(db: Session, tenant_id: str):
     for rent_property, lister_tenant in results:
         rental_data = RentPropertySchema.from_orm(rent_property).dict()
 
-        rentals.append({
-            **rental_data,
-            "status": lister_tenant.status,
-            "created_at": lister_tenant.created_at,
-            "type": "Rent"
-        })
+        rentals.append(
+            {
+                **rental_data,
+                "status": lister_tenant.status,
+                "created_at": lister_tenant.created_at,
+                "type": "Rent",
+            }
+        )
 
     return rentals
 

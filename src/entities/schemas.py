@@ -65,9 +65,11 @@ class RentPropertyBase(BaseModel):
     is_popular: bool = False
     is_available: bool = True
     description: Optional[str] = ""
+    aidesc: List[str] = []
     amenities: List[str] = []
     tags: List[str] = []
     images: List[str] = []
+    videos: List[str] = []
     latitude: Optional[float] = None
     longitude: Optional[float] = None
 
@@ -90,6 +92,8 @@ class RentPropertySchema(RentPropertyBase):
     tenant_id: Optional[str] = None
     lease_term: Optional[int] = None
     listed_at: datetime
+    lister_name: Optional[str]
+    tenant_name: Optional[str]
 
     class Config:
         from_attributes = True
@@ -118,6 +122,7 @@ class BuyPropertyCreateSchema(RentPropertyBase):
     slug: Optional[str] = None
     document_list: List[str] = []
 
+
 class BuyPropertyUpdateSchema(RentPropertyBase):
     slug: Optional[str] = None
     document_list: List[str] = []
@@ -131,6 +136,8 @@ class BuyPropertySchema(RentPropertyBase):
     buyer_id: Optional[str] = None
     lease_term: Optional[int] = None
     document_list: List[str] = []
+    lister_name: Optional[str]
+    buyer_name: Optional[str]
 
     class Config:
         from_attributes = True

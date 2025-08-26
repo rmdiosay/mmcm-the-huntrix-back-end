@@ -9,6 +9,10 @@ from urllib.parse import urlparse, unquote
 from textblob import TextBlob
 from better_profanity import profanity
 from src.entities.models import ListerTenant
+from PIL import Image, UnidentifiedImageError
+import requests
+from transformers import BlipProcessor, BlipForConditionalGeneration
+from io import BytesIO
 
 limiter = Limiter(key_func=get_remote_address)
 
@@ -69,9 +73,13 @@ def delete_file_safe(path: str) -> bool:
     try:
         response = supabase.storage.from_("files").remove([extract_storage_path(path)])
         # Supabase returns a list of errors if any
-        if response.get("error"):
-            print(f"Supabase deletion error: {response['error']}")
-            return False
+        for item in response:
+            if item.get("error"):
+                print(
+                    f"Supabase deletion error for {item.get('name')}: {item['error']}"
+                )
+                return False
+
         return True
     except Exception as e:
         print(f"Failed to delete {path} from Supabase: {e}")
@@ -170,3 +178,32 @@ def update_user_tier(user):
     user.tier = min(points_tier, referrals_tier, key=lambda t: tier_order[t])
     user.max_listings = listings_tier_limits.get(user.tier, 0)
     user.extra_points = extra_tier_limits.get(user.tier, 0)
+
+
+processor = BlipProcessor.from_pretrained("Salesforce/blip-image-captioning-base")
+model = BlipForConditionalGeneration.from_pretrained(
+    "Salesforce/blip-image-captioning-base"
+)
+
+
+def generate_image_description(image_url: str) -> str:
+    try:
+        # Remove trailing '?' if present
+        image_url = image_url.rstrip("?")
+
+        headers = {"User-Agent": "Mozilla/5.0"}
+        response = requests.get(image_url, headers=headers)
+        response.raise_for_status()
+
+        # Use BytesIO for PIL
+        image = Image.open(BytesIO(response.content)).convert("RGB")
+
+        inputs = processor(images=image, return_tensors="pt")
+        out = model.generate(**inputs)
+        description = processor.decode(out[0], skip_special_tokens=True)
+        return description
+
+    except UnidentifiedImageError:
+        return f"Error: Cannot identify image at URL {image_url}"
+    except requests.RequestException as e:
+        return f"Error downloading image: {e}"
