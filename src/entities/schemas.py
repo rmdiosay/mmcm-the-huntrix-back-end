@@ -72,9 +72,11 @@ class RentPropertyBase(BaseModel):
     videos: List[str] = []
     latitude: Optional[float] = None
     longitude: Optional[float] = None
+    property_score: float
 
 
 class RentPropertyCreateSchema(RentPropertyBase):
+    freq: str
     lease_term: Optional[int] = None
     slug: Optional[str] = None
 

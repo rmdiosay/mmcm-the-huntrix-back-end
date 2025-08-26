@@ -25,6 +25,7 @@ async def create_rent(
     bed: int = Form(...),
     bath: int = Form(...),
     size: str = Form(...),
+    freq: str = Form(...),
     description: str = Form(""),
     amenities: List[str] = Form([]),
     tags: List[str] = Form([]),
@@ -33,6 +34,7 @@ async def create_rent(
     lease_term: Optional[int] = Form(None),
     latitude: Optional[float] = Form(None),
     longitude: Optional[float] = Form(None),
+    property_score: float = Form(...),
     db: Session = Depends(get_db),
     token_data: TokenData = Depends(get_current_user),
 ):
@@ -50,9 +52,11 @@ async def create_rent(
         tags=tags,
         images=images,
         videos=videos,
+        freq=freq,
         lease_term=lease_term,
         latitude=latitude,
         longitude=longitude,
+        property_score=property_score
     )
 
 

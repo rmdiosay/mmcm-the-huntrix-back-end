@@ -36,6 +36,7 @@ async def create_buy_property(
     amenities: List[str],
     tags: List[str],
     document_list: List[str],
+    property_score: float,
     images: Optional[List[UploadFile]] = None,
     videos: Optional[List[UploadFile]] = None,
     latitude: Optional[float] = None,
@@ -44,7 +45,8 @@ async def create_buy_property(
     slug = generate_slug(name, db, BuyProperty)
     if images:
         image_paths = [await save_upload_file(img, UPLOAD_DIR_IMAGES) for img in images]
-        aidesc = [generate_image_description(image) for image in image_paths]
+        # aidesc = [generate_image_description(image) for image in image_paths]
+        aidesc = []
     else:
         image_paths = []
         aidesc = []
@@ -70,6 +72,7 @@ async def create_buy_property(
         videos=video_paths,
         latitude=latitude,
         longitude=longitude,
+        property_score=property_score,
     )
 
     db_property = BuyProperty(**buy.model_dump(), lister_id=lister_id)
@@ -192,7 +195,7 @@ def delete_buy_property(db: Session, slug: str):
 # ---------------- SaleService ----------------
 
 
-def _update_user_stats(user, sale_amount: float):
+def _update_user_stats(user: User, sale_amount: float):
     """
     Update a user's stats after a sale.
     - Add sale_amount to sale
@@ -258,19 +261,15 @@ class SaleService:
         except SQLAlchemyError as e:
             self.db.rollback()
             raise e
-        
+
     def get_pending_sales_by_property(self, buy_id: str):
         """Return all ListerTenant records for a given property."""
         try:
-            return (
-                self.db.query(ListerBuyer)
-                .filter(ListerBuyer.buy_id == buy_id)
-                .all()
-            )
+            return self.db.query(ListerBuyer).filter(ListerBuyer.buy_id == buy_id).all()
         except SQLAlchemyError as e:
             self.db.rollback()
             raise e
-        
+
     def confirm_sale(self, lister_buyer_id: str):
         """Confirm a sale, finalize the buyer, remove other pending records, and update lister and buyer stats."""
         try:

@@ -29,20 +29,22 @@ async def create_rent_property(
     bed: int,
     bath: int,
     size: str,
+    freq: str,
     description: str,
     amenities: List[str],
     tags: List[str],
+    property_score: float,
     images: Optional[List[UploadFile]] = None,
     videos: Optional[List[UploadFile]] = None,
     lease_term: Optional[int] = None,
     latitude: Optional[float] = None,
     longitude: Optional[float] = None,
 ):
-    print("Hi")
     slug = generate_slug(name, db, RentProperty)
     if images:
         image_paths = [await save_upload_file(img, "rent-images") for img in images]
-        aidesc = [generate_image_description(image) for image in image_paths]
+        # aidesc = [generate_image_description(image) for image in image_paths]
+        aidesc = []
     else:
         image_paths = []
         aidesc = []
@@ -65,9 +67,11 @@ async def create_rent_property(
         tags=tags,
         images=image_paths,
         videos=video_paths,
+        freq=freq,
         lease_term=lease_term,
         latitude=latitude,
         longitude=longitude,
+        property_score=property_score,
     )
 
     db_property = RentProperty(**rent_data.model_dump(), lister_id=lister_id)

@@ -28,6 +28,7 @@ async def create_buy(
     description: str = Form(""),
     amenities: List[str] = Form([]),
     tags: List[str] = Form([]),
+    property_score: float = Form(...),
     document_list: List[str] = Form([]),
     images: Optional[List[UploadFile]] = File(None),
     videos: Optional[List[UploadFile]] = File(None),
@@ -53,6 +54,7 @@ async def create_buy(
         videos=videos,
         latitude=latitude,
         longitude=longitude,
+        property_score=property_score,
     )
 
 

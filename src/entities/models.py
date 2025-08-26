@@ -48,7 +48,6 @@ class User(Base):
     used_listings = Column(Float, default=0)
     extra_points = Column(Float, default=0)
     favorites = Column(JSON, nullable=True)
-    property_score = Column(Float, default=0)
 
     referrals = relationship("User", backref="referred_by", remote_side=[id])
     rent_properties = relationship(
@@ -91,6 +90,7 @@ class RentProperty(Base):
     latitude = Column(Float, nullable=True)
     longitude = Column(Float, nullable=True)
     listed_at = Column(DateTime, default=datetime.utcnow)
+    property_score = Column(Float, default=0)
 
     lister_id = Column(String(36), ForeignKey("users.id"), nullable=False)
     lister = relationship(
@@ -142,6 +142,7 @@ class BuyProperty(Base):
     latitude = Column(Float, nullable=True)
     longitude = Column(Float, nullable=True)
     listed_at = Column(DateTime, default=datetime.utcnow)
+    property_score = Column(Float, default=0)
 
     lister_id = Column(String(36), ForeignKey("users.id"), nullable=False)
     lister = relationship(

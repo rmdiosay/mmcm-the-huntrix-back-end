@@ -8,11 +8,11 @@ from slowapi.util import get_remote_address
 from urllib.parse import urlparse, unquote
 from textblob import TextBlob
 from better_profanity import profanity
-from src.entities.models import ListerTenant
-from PIL import Image, UnidentifiedImageError
-import requests
-from transformers import BlipProcessor, BlipForConditionalGeneration
-from io import BytesIO
+from src.entities.models import ListerTenant, User
+# from PIL import Image, UnidentifiedImageError
+# import requests
+# from transformers import BlipProcessor, BlipForConditionalGeneration
+# from io import BytesIO
 
 limiter = Limiter(key_func=get_remote_address)
 
@@ -126,7 +126,7 @@ def check_if_toxic(comment: str) -> bool:
     return profanity.contains_profanity(comment)
 
 
-def update_user_tier(user):
+def update_user_tier(user: User):
     """
     Determine user tier based on points and referrals_count.
     The lower tier is chosen if points and referrals fall into different tiers.
@@ -180,32 +180,33 @@ def update_user_tier(user):
     user.extra_points = extra_tier_limits.get(user.tier, 0)
 
 
-processor = BlipProcessor.from_pretrained(
-    "Salesforce/blip-image-captioning-base", use_fast=True
-)
-model = BlipForConditionalGeneration.from_pretrained(
-    "Salesforce/blip-image-captioning-base"
-)
+# processor = BlipProcessor.from_pretrained(
+#     "Salesforce/blip-image-captioning-base", use_fast=True
+# )
+# model = BlipForConditionalGeneration.from_pretrained(
+#     "Salesforce/blip-image-captioning-base"
+# )
 
 
-def generate_image_description(image_url: str) -> str:
-    try:
-        # Remove trailing '?' if present
-        image_url = image_url.rstrip("?")
+# def generate_image_description(image_url: str) -> str:
+    # try:
+    #     # Remove trailing '?' if present
+    #     image_url = image_url.rstrip("?")
 
-        headers = {"User-Agent": "Mozilla/5.0"}
-        response = requests.get(image_url, headers=headers)
-        response.raise_for_status()
+    #     headers = {"User-Agent": "Mozilla/5.0"}
+    #     response = requests.get(image_url, headers=headers)
+    #     response.raise_for_status()
 
-        # Use BytesIO for PIL
-        image = Image.open(BytesIO(response.content)).convert("RGB")
+    #     # Use BytesIO for PIL
+    #     image = Image.open(BytesIO(response.content)).convert("RGB")
 
-        inputs = processor(images=image, return_tensors="pt")
-        out = model.generate(**inputs)
-        description = processor.decode(out[0], skip_special_tokens=True)
-        return description
+    #     inputs = processor(images=image, return_tensors="pt")
+    #     out = model.generate(**inputs)
+    #     description = processor.decode(out[0], skip_special_tokens=True)
+    #     return description
 
-    except UnidentifiedImageError:
-        return f"Error: Cannot identify image at URL {image_url}"
-    except requests.RequestException as e:
-        return f"Error downloading image: {e}"
+    # except UnidentifiedImageError:
+    #     return f"Error: Cannot identify image at URL {image_url}"
+    # except requests.RequestException as e:
+    #     return f"Error downloading image: {e}"
+
