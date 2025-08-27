@@ -32,7 +32,7 @@ class ReviewService:
 
     def create_review(self, review_data: dict) -> Review:
         user_id = review_data.get("user_id")
-        property_id = review_data.get("property_id")
+        property_id = review_data.get("rent_property_id")
         comment = review_data.get("comment")
 
         # 1️⃣ Verify tenant status
