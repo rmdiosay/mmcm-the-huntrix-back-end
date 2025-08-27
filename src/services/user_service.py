@@ -56,6 +56,7 @@ def verify_user(db: Session, user: User) -> User:
         raise HTTPException(status_code=400, detail="User is already verified")
 
     user.is_verified = True
+    user.referrals_count += 1
     db.add(user)
 
     # Multi-level referral updates
