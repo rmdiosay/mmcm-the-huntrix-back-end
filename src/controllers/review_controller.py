@@ -40,7 +40,7 @@ def list_reviews(skip: int = 0, limit: int = 100, db: Session = Depends(get_db))
     return service.get_reviews(skip=skip, limit=limit)
 
 
-@router.get("/{property_id}", response_model=list[ReviewRead])
+@router.get("/property/{property_id}", response_model=list[ReviewRead])
 def list_reviews_for_property(
     property_id: str, skip: int = 0, limit: int = 100, db: Session = Depends(get_db)
 ):
