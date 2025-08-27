@@ -32,7 +32,7 @@ class UserResponse(BaseModel):
     first_name: str
     last_name: str
     tier: str = "Bronze"
-    points: int = 0
+    points: float = 0
     referrals_count: int = 0
     transactions: int = 0
     property_sale: Optional[float] = 0

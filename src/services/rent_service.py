@@ -83,7 +83,7 @@ async def create_rent_property(
 
 # ---------------- READ ----------------
 def get_rent_properties(db: Session):
-    return db.query(RentProperty).filter(RentProperty.is_available).all()
+    return db.query(RentProperty).all()
 
 
 def get_user_rent_listings(db: Session, lister_id: str):

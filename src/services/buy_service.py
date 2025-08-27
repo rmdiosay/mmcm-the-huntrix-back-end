@@ -84,7 +84,7 @@ async def create_buy_property(
 
 # ---------------- READ ----------------
 def get_buy_properties(db: Session):
-    return db.query(BuyProperty).filter(BuyProperty.is_available).all()
+    return db.query(BuyProperty).all()
 
 
 def get_user_buy_listings(db: Session, lister_id: str):
