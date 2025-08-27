@@ -178,6 +178,20 @@ class ListerTenant(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     status = Column(String, default="Pending")
     message = Column(Text, nullable=True)
+    lister = relationship("User", foreign_keys=[lister_id])
+    tenant = relationship("User", foreign_keys=[tenant_id])
+
+    @property
+    def lister_name(self):
+        if self.lister:
+            return f"{self.lister.first_name} {self.lister.last_name}"
+        return None
+
+    @property
+    def tenant_name(self):
+        if self.tenant:
+            return f"{self.tenant.first_name} {self.tenant.last_name}"
+        return None
 
 
 class ListerBuyer(Base):
@@ -190,6 +204,20 @@ class ListerBuyer(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     status = Column(String, default="Pending")
     message = Column(Text, nullable=True)
+    lister = relationship("User", foreign_keys=[lister_id])
+    buyer = relationship("User", foreign_keys=[buyer_id])
+
+    @property
+    def lister_name(self):
+        if self.lister:
+            return f"{self.lister.first_name} {self.lister.last_name}"
+        return None
+
+    @property
+    def buyer_name(self):
+        if self.buyer:
+            return f"{self.buyer.first_name} {self.buyer.last_name}"
+        return None
 
 
 class Review(Base):
@@ -208,6 +236,12 @@ class Review(Base):
         String(36), ForeignKey("rent_properties.id"), nullable=True
     )
     rent_property = relationship("RentProperty", back_populates="reviews")
+
+    @property
+    def user_name(self):
+        if self.user:
+            return f"{self.user.first_name} {self.user.last_name}"
+        return None    
 
 
 class Message(Base):

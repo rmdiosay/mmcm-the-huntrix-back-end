@@ -56,7 +56,7 @@ async def create_rent(
         lease_term=lease_term,
         latitude=latitude,
         longitude=longitude,
-        property_score=property_score
+        property_score=property_score,
     )
 
 
@@ -167,6 +167,8 @@ def get_pending_rentals(
                 "status": p.status,
                 "message": p.message,
                 "created_at": p.created_at.isoformat(),
+                "lister_name": p.lister_name,
+                "tenant_name": p.tenant_name,
             }
             for p in pendings
         ]

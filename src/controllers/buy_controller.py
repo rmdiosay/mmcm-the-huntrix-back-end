@@ -162,6 +162,8 @@ def get_pending_rentals(
                 "status": p.status,
                 "message": p.message,
                 "created_at": p.created_at.isoformat(),
+                "lister_name": p.lister_name,
+                "buyer_name": p.buyer_name,
             }
             for p in pendings
         ]
